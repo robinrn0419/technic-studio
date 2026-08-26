@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>科技零件工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#151619; --panel:#1e2024; --raise:#26282e; --hover:#2f323a;
+  --hair:rgba(255,255,255,.08); --hair-2:rgba(255,255,255,.16);
+  --text:#dfe1e5; --muted:#8d929b; --dim:#5c616b;
+  --view:#2b2d33;
+  --acc:#4a80d9; --acc-t:#7ab0ff;
+  --ax-x:#e05a50; --ax-y:#7cb648; --ax-z:#5590d9;
+  --sans:'Inter','Noto Sans TC',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --r:5px; --top:48px; --rail:54px; --fly:238px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body{background:var(--view);color:var(--text);font-family:var(--sans);font-size:12.5px;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.micro{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:600}
+
+#stage{position:fixed;left:var(--rail);right:0;bottom:0;top:var(--top);
+  background:var(--view);transition:left .26s var(--ease)}
+body.pinned #stage{left:calc(var(--rail) + var(--fly))}
+body.pinned .viewbar{left:calc(var(--rail) + var(--fly) + 10px)}
+#stage canvas{display:block;position:absolute;top:0;left:0;touch-action:none}
+
+/* ── 頂列 ── */
+.chrome{position:fixed;top:0;left:0;right:0;height:var(--top);z-index:20;
+  display:flex;align-items:center;gap:8px;padding:0 10px;
+  background:var(--panel);border-bottom:1px solid var(--hair)}
+.mark{display:flex;flex-direction:column;gap:2px;padding:0 10px 0 6px;margin-right:2px;
+  border-right:1px solid var(--hair);line-height:1}
+.mark h1{font-size:12.5px;font-weight:600;margin:0;letter-spacing:.04em;white-space:nowrap}
+.mark p{margin:0;font-family:var(--mono);font-size:8px;color:var(--dim);
+  letter-spacing:.22em;text-transform:uppercase;font-weight:400}
+.tools{display:flex;align-items:center;gap:6px}
+.stats{display:flex;gap:14px;padding:0 14px;margin-right:2px;border-right:1px solid var(--hair)}
+.stats div{display:flex;align-items:baseline;gap:6px}
+.stats .v{font-family:var(--mono);font-weight:300;font-size:16px;letter-spacing:-.02em}
+.stats .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:600}
+
+/* ── 控制項 ── */
+button{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--text);
+  background:var(--raise);border:1px solid transparent;border-radius:var(--r);
+  padding:7px 12px;cursor:pointer;letter-spacing:.02em;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .22s var(--ease),border-color .22s var(--ease),color .22s var(--ease)}
+button:hover:not(:disabled){background:var(--hover)}
+button:disabled{opacity:.28;cursor:not-allowed}
+button:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
+button svg{display:block;flex:0 0 auto}
+button.quiet{background:transparent;color:var(--muted);padding:7px 8px}
+button.quiet:hover:not(:disabled){color:var(--text);background:var(--raise)}
+button.ink{background:var(--acc);color:#fff;font-weight:600}
+button.ink:hover:not(:disabled){background:#5c90e4}
+button.big{font-weight:600;padding:7px 15px}
+button.on{color:var(--acc-t);background:rgba(74,128,217,.15);border-color:rgba(74,128,217,.45)}
+.caret{font-size:8px;opacity:.55}
+kbd{font-family:var(--mono);font-size:9px;color:var(--dim);border:1px solid var(--hair-2);
+  border-radius:3px;padding:1px 4px;font-weight:400}
+
+/* ── 零件抽屜：左側窄軌 + 自動滑出 ── */
+.dock{position:fixed;left:0;top:var(--top);bottom:0;z-index:19;display:flex;align-items:stretch}
+.rail{width:var(--rail);flex:0 0 auto;background:var(--panel);
+  border-right:1px solid var(--hair);display:flex;flex-direction:column;
+  align-items:stretch;padding:8px 6px;gap:3px}
+.rail button{background:transparent;border-radius:var(--r);padding:8px 0 7px;
+  color:var(--muted);flex-direction:column;gap:2px;line-height:1.1}
+.rail button .t{font-size:13px;font-weight:600}
+.rail button .n{font-family:var(--mono);font-size:8.5px;font-weight:300;opacity:.55}
+.rail button:hover{background:var(--raise);color:var(--text)}
+.rail button.on{background:rgba(74,128,217,.16);color:var(--acc-t)}
+.rail .sp{flex:1}
+.rail .pin{color:var(--dim);padding:9px 0}
+.rail .pin.on{color:var(--acc-t);background:rgba(74,128,217,.16)}
+
+.fly{width:0;flex:0 0 auto;overflow:hidden;background:var(--panel);
+  border-right:1px solid transparent;transition:width .26s var(--ease),border-color .26s}
+.dock.open .fly{width:var(--fly);border-right-color:var(--hair)}
+.fly-in{width:var(--fly);height:100%;overflow-y:auto;padding:10px 8px 20px}
+.fly-in::-webkit-scrollbar{width:7px}
+.fly-in::-webkit-scrollbar-thumb{background:var(--raise);border-radius:4px}
+.fly-h{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  font-weight:600;padding:6px 10px 10px}
+.prow{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;
+  background:transparent;border:1px solid transparent;border-radius:var(--r);
+  cursor:pointer;text-align:left;transition:background .2s var(--ease)}
+.prow:hover{background:var(--raise);border-color:var(--hair-2)}
+.prow .lbl{font-size:12px;color:var(--muted);white-space:nowrap;flex:0 0 auto;width:62px}
+.prow:hover .lbl{color:var(--text)}
+.prow svg{display:block;margin-left:auto}
+
+/* ── 下拉面板 ── */
+.pop{position:fixed;z-index:22;display:none;background:var(--panel);
+  border:1px solid var(--hair-2);border-radius:8px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.pop.open{display:flex}
+#popTol{right:10px;top:calc(var(--top) + 8px);width:316px;
+  flex-direction:column;padding:20px 20px 22px;max-height:calc(100vh - var(--top) - 24px);
+  overflow-y:auto}
+#popTol::-webkit-scrollbar{width:7px}
+#popTol::-webkit-scrollbar-thumb{background:var(--raise);border-radius:4px}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.field label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  font-weight:600}
+.field input{font-family:var(--mono);font-size:22px;font-weight:300;color:var(--text);
+  background:var(--bg);border:1px solid var(--hair);border-radius:var(--r);
+  padding:8px 10px;width:100%;letter-spacing:-.01em}
+.field input:focus{outline:none;border-color:var(--acc)}
+.note{font-size:11.5px;line-height:1.8;color:var(--muted);margin:0}
+.hair{height:1px;background:var(--hair);margin:20px 0 16px}
+.micro{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.trow{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.trow label{font-size:11px;color:var(--dim);width:34px;flex:0 0 auto}
+.trow input{font-family:var(--mono);font-size:13px;color:var(--text);background:var(--bg);
+  border:1px solid var(--hair);border-radius:var(--r);padding:6px 8px;flex:1;min-width:0}
+.trow input:focus{outline:none;border-color:var(--acc)}
+.note b{color:var(--text);font-weight:600}
+.note code{font-family:var(--mono);color:var(--acc-t);font-size:11px}
+
+/* ── 選取零件面板 ── */
+.selpanel{position:fixed;z-index:18;display:none;width:280px;right:10px;
+  top:calc(var(--top) + 8px);
+  background:var(--panel);border:1px solid var(--hair-2);border-radius:8px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);padding:16px 18px 18px}
+.selpanel .hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--hair)}
+.selpanel .hd .nm{font-size:14px;font-weight:600}
+.selpanel .hd .ly{font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.1em}
+.jointrow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.jointrow span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  font-weight:600}
+.jointrow b{font-family:var(--mono);font-size:30px;font-weight:300;letter-spacing:-.03em;
+  line-height:.9;color:var(--acc-t)}
+.axrow{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.axrow .axl{font-family:var(--mono);font-size:11px;width:10px;font-weight:500}
+.axrow input[type=range]{flex:1;min-width:0;height:2px}
+.axrow b{font-family:var(--mono);font-size:12px;font-weight:300;color:var(--muted);
+  width:40px;text-align:right}
+.axrow[data-ax=x] .axl{color:var(--ax-x)} .axrow[data-ax=x] input{accent-color:var(--ax-x)}
+.axrow[data-ax=y] .axl{color:var(--ax-y)} .axrow[data-ax=y] input{accent-color:var(--ax-y)}
+.axrow[data-ax=z] .axl{color:var(--ax-z)} .axrow[data-ax=z] input{accent-color:var(--ax-z)}
+input[type=range]{width:100%;accent-color:var(--acc);margin:0}
+input[type=range]:disabled{opacity:.25}
+.seg{display:flex;background:var(--bg);border:1px solid var(--hair);border-radius:var(--r);
+  overflow:hidden;margin:12px 0}
+.seg button{background:transparent;border:0;border-radius:0;flex:1;padding:7px 0;
+  color:var(--dim);font-size:10px;letter-spacing:.1em;font-weight:600}
+.seg button + button{border-left:1px solid var(--hair)}
+.seg button.on{background:var(--acc);color:#fff}
+.row{display:flex;gap:5px;margin-top:5px}
+.row > *{flex:1}
+.row button{padding:7px 6px;font-size:11.5px}
+.chk{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted);
+  cursor:pointer;margin-top:13px}
+.chk input{accent-color:var(--acc)}
+.danger{background:transparent;color:var(--muted)}
+.danger:hover:not(:disabled){color:#e0685f;background:rgba(224,90,80,.12)}
+
+/* ── 視角 / 動作列 ── */
+.viewbar{position:fixed;left:calc(var(--rail) + 10px);bottom:10px;transition:left .26s var(--ease);z-index:16;display:flex;gap:2px;
+  background:var(--panel);border:1px solid var(--hair-2);border-radius:7px;padding:3px}
+.viewbar button{background:transparent;border-radius:4px;padding:7px 12px;color:var(--muted);
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.viewbar button:hover{background:var(--raise);color:var(--text)}
+.viewbar button.on{color:var(--acc-t);background:rgba(74,128,217,.15)}
+
+.actionbar{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:17;
+  display:none;align-items:center;gap:20px;
+  background:var(--panel);border:1px solid var(--hair-2);border-radius:8px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);padding:12px 12px 12px 18px;
+  max-width:min(620px,92vw)}
+.actionbar .msg{font-family:var(--mono);font-size:10.5px;font-weight:300;color:var(--muted);
+  line-height:1.8;letter-spacing:.02em}
+.actionbar .msg b{font-size:17px;color:var(--text);letter-spacing:-.01em}
+.actionbar .msg .w{color:#e0a13c}
+.actionbar .btns{display:flex;gap:6px;flex:0 0 auto}
+
+#toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:64px;
+  display:none;max-width:min(560px,92vw);background:var(--panel);
+  border:1px solid var(--hair-2);border-radius:8px;padding:14px 18px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);font-size:12.5px;line-height:1.75;
+  color:var(--text);white-space:pre-line}
+#toast.bad{border-color:#a8564d}
+#angBadge{position:fixed;z-index:19;display:none;pointer-events:none;
+  transform:translate(-50%,-50%);font-family:var(--mono);font-size:20px;font-weight:300;
+  color:var(--text);background:var(--panel);border:1px solid var(--hair-2);
+  border-radius:6px;padding:6px 12px;letter-spacing:-.01em}
+
+#empty{position:fixed;left:var(--rail);right:0;top:var(--top);bottom:0;z-index:5;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  color:var(--dim);pointer-events:none;text-align:center;padding:24px}
+#empty .big{font-size:15px;font-weight:500;color:#7d828b}
+#empty .small{font-family:var(--mono);font-size:10px;color:#5c616b;line-height:2.1;
+  font-weight:300;letter-spacing:.12em;text-transform:uppercase}
+#empty.err .big{color:#e0685f}
+#empty.err .small{color:#a0716c;max-width:440px;word-break:break-word;
+  text-transform:none;letter-spacing:0}
+.foot{position:fixed;right:12px;bottom:10px;z-index:6;text-align:right;pointer-events:none;
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);line-height:1.9}
+.foot .keys{letter-spacing:.02em;text-transform:none;opacity:.85}
+
+@media (max-width:980px){
+  .stats,.mark p,.foot{display:none}
+  .chrome{gap:4px;padding:0 6px}
+  :root{--rail:46px;--fly:200px}
+  body.pinned #stage{left:var(--rail)}
+  #popTol{left:10px;right:10px;width:auto}
+  .selpanel{left:10px;right:10px;width:auto;top:auto;bottom:56px}
+  .actionbar{left:8px;right:8px;transform:none;max-width:none;
+    flex-direction:column;align-items:stretch;gap:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<div class="chrome">
+  <div class="mark">
+    <h1>科技零件工作台</h1>
+    <p>Technic Studio</p>
+  </div>
+  <div class="stats">
+    <div><span class="v" id="cnt">0</span><span class="k">零件</span></div>
+    <div><span class="v" id="gcnt">0</span><span class="k">組件</span></div>
+    <div><span class="v" id="scnt">0</span><span class="k">空孔</span></div>
+  </div>
+  <div class="tools">
+    <button class="quiet" id="undo" disabled title="復原 Ctrl+Z"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h7a3.5 3.5 0 010 7H6"/><path d="M6 4L3 7l3 3"/></svg></button>
+    <button class="quiet" id="save" title="存檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8"/><path d="M5 7l3 3 3-3"/><path d="M2.5 13h11"/></svg></button>
+    <button class="quiet" id="load" title="讀檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V3"/><path d="M5 6l3-3 3 3"/><path d="M2.5 13h11"/></svg></button>
+    <input type="file" id="file" accept=".json" style="display:none">
+    <button id="btnTol">公差 <span class="caret">▼</span></button>
+    <button class="ink" id="expFused" disabled>融合 STL</button>
+    <button id="expParts" disabled>分件 STL</button>
+  </div>
+</div>
+
+<div class="dock" id="dock">
+  <div class="rail" id="popCats"></div>
+  <div class="fly"><div class="fly-in"><div class="fly-h" id="flyH">零件</div>
+    <div id="popList"></div></div></div>
+</div>
+
+<div class="pop" id="popTol">
+  <div class="field">
+    <label for="comp">主孔補償 · 直徑 mm</label>
+    <input id="comp" type="number" step="0.05" value="0.20">
+  </div>
+  <div class="field">
+    <label for="cbd">沉孔直徑 mm</label>
+    <input id="cbd" type="number" step="0.05" value="6.10">
+  </div>
+  <div class="field">
+    <label for="cbh">沉孔深度 mm</label>
+    <input id="cbh" type="number" step="0.05" value="0.80">
+  </div>
+  <p class="note">主孔標稱 <code>4.85</code> mm。FDM 印出來會縮小，用補償值放大。<br><br>
+  <b>沉孔</b>是孔兩端那圈較大的凹槽，摩擦插銷的凸稜卡進去才固定得住。填 0 退回直孔。</p>
+
+  <div class="hair"></div>
+  <div class="micro" style="margin-bottom:10px">公差測試件</div>
+  <div class="seg" id="sweepSeg" style="margin-top:0">
+    <button data-sweep="comp" class="on">主孔補償</button>
+    <button data-sweep="cbh">沉孔深度</button>
+  </div>
+  <div class="trow"><label>起始</label><input id="tStart" type="number" step="0.05" value="0.10"></div>
+  <div class="trow"><label>級距</label><input id="tStep" type="number" step="0.05" value="0.05"></div>
+  <div class="trow"><label>孔數</label><input id="tN" type="number" step="1" value="6"></div>
+  <button id="genTest" style="width:100%;margin-top:10px">產生測試件 STL</button>
+  <p class="note" style="margin-top:12px">印一片就能一次比完。有記號小孔的那端是第一孔，
+  依序試插正版插銷，找出「要出點力才進得去、進去後不會自己掉」的那一個。</p>
+</div>
+
+<div class="selpanel" id="selpanel">
+  <div class="hd"><span class="nm" id="selname">—</span><span class="ly" id="sellayer"></span></div>
+
+  <div id="jointBox" style="display:none">
+    <div class="jointrow"><span>繞接合軸</span><b id="angVal">0°</b></div>
+    <input type="range" id="ang" min="0" max="360" step="1" value="0">
+  </div>
+
+  <div id="axisBox" style="display:none">
+    <div class="axrow" data-ax="x"><span class="axl">X</span>
+      <input type="range" id="angX" min="0" max="360" step="1" value="0"><b id="valX">0°</b></div>
+    <div class="axrow" data-ax="y"><span class="axl">Y</span>
+      <input type="range" id="angY" min="0" max="360" step="1" value="0"><b id="valY">0°</b></div>
+    <div class="axrow" data-ax="z"><span class="axl">Z</span>
+      <input type="range" id="angZ" min="0" max="360" step="1" value="0"><b id="valZ">0°</b></div>
+  </div>
+
+  <div class="seg" id="stepSeg">
+    <button data-step="15">15°</button>
+    <button data-step="45" class="on">45°</button>
+    <button data-step="90">90°</button>
+    <button data-step="0">自由</button>
+  </div>
+
+  <div class="row"><button id="flip" disabled>翻面</button><button id="side" disabled>換邊</button></div>
+  <div class="row"><button id="layerDown" disabled>▼ 層</button><button id="layerUp" disabled>▲ 層</button></div>
+  <div class="row"><button id="detach" disabled>拆開</button>
+    <button class="danger" id="del" disabled>刪除</button></div>
+  <label class="chk"><input type="checkbox" id="gridsnap" checked> 吸附 8 mm 網格</label>
+</div>
+
+<div class="viewbar">
+  <button data-view="iso">等角</button>
+  <button data-view="top">俯視</button>
+  <button data-view="front">前視</button>
+  <button id="fit">置中</button>
+</div>
+
+<div class="actionbar" id="actionbar">
+  <div class="msg" id="actionmsg"></div>
+  <div class="btns">
+    <button class="ink" id="join">接合</button>
+    <button id="brace">架斜撐</button>
+  </div>
+</div>
+
+<div id="empty">
+  <div class="big">從左側零件抽屜取幾支樑</div>
+  <div class="small">拖零件 移動　拖空白 轉視角<br>右鍵拖 平移　滾輪 縮放</div>
+</div>
+<div id="angBadge"></div>
+<div id="toast"></div>
+<div class="foot">格線 8 mm<div class="keys">Esc 取消 · Del 刪除 · Ctrl+Z 復原 · F 置中 · 1 2 3 視角</div></div>
+
+<script>
+function showFail(t,d){var e=document.getElementById('empty');if(!e)return;
+  e.className='err';e.style.display='flex';
+  e.innerHTML='<div class="big">'+t+'</div><div class="small">'+d+'</div>';}
+window.addEventListener('error',function(ev){
+  showFail('程式出錯了',(ev.message||'未知錯誤')+' — 行 '+(ev.lineno||'?'));});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+if(typeof THREE==='undefined'){
+  showFail('three.js 沒載入','第一次開啟需要網路載入 3D 函式庫。連上網路後重新整理，之後會有快取。');
+  return;
+}
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+const Q=()=>new THREE.Quaternion();
+const el=id=>document.getElementById(id);
+
+/* ── 真實尺寸（mm） ── */
+const MOD=8, TH=7.8, R=3.9, HOLE=4.85;
+
+/* ── 零件定義 ──────────────────────────────────────────
+   bar = {xs:[孔的位置], rot:繞原點旋轉, off:[平移]}
+   sockets 成對（2i = +面, 2i+1 = -面），一對 = 一個孔
+   th = 樑厚（薄樑為一半）                                */
+function defFrom(bars,th,name,cat){
+  const holes=[],seen={};
+  bars.forEach(b=>{
+    const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    b.xs.forEach(x=>{
+      const px=x*c+ox, py=x*si+oy, k=px.toFixed(2)+','+py.toFixed(2);
+      if(seen[k])return; seen[k]=1; holes.push([px,py]);
+    });
+  });
+  const sockets=[];
+  holes.forEach(h=>{
+    sockets.push({pos:[h[0],h[1], th/2],axis:[0,0, 1]});
+    sockets.push({pos:[h[0],h[1],-th/2],axis:[0,0,-1]});
+  });
+  return {kind:'beam',bars:bars,th:th,sockets:sockets,name:name,cat:cat,col:CAT_COL[cat]||0xf2c11c};
+}
+const span=n=>{const L=(n-1)*MOD,a=[];for(let i=0;i<n;i++)a.push(i*MOD-L/2);return a;};
+const from0=n=>{const a=[];for(let i=0;i<n;i++)a.push(i*MOD);return a;};
+const DEG=d=>d*Math.PI/180;
+
+const CAT_COL={'直樑':0xf2c11c,'薄樑':0x9ba0a6,'L 樑':0xef7c1e,
+  'T 樑':0x4d5157,'十字樑':0xc4281c,'斜樑':0x2f7bbf};
+const DEFS={};
+const BEAMS=[2,3,4,5,6,7,8,9,10,11,12,13,15,16];
+const THINS=[3,5,7,9,11,13,15];
+const LS=[[3,3],[5,3],[7,3],[9,3],[5,5],[7,5],[9,5],[11,3]];
+const TS=[[5,3],[7,3],[7,4],[9,3]];
+const XS=[[5,5],[7,5],[7,7],[9,5]];
+const ANG=[[45,4,4],[45,5,3],[60,4,4],[60,5,5],[120,4,4],[135,4,4]];
+
+BEAMS.forEach(n=>DEFS['beam'+n]=defFrom([{xs:span(n),rot:0}],TH,n+' 孔','直樑'));
+THINS.forEach(n=>DEFS['thin'+n]=defFrom([{xs:span(n),rot:0}],TH/2,'薄 '+n+' 孔','薄樑'));
+LS.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,'L '+q[0]+'×'+q[1],'L 樑'));
+TS.forEach(q=>DEFS['T'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:span(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,'T '+q[0]+'×'+q[1],'T 樑'));
+XS.forEach(q=>DEFS['X'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:span(q[0]),rot:0},{xs:span(q[1]),rot:DEG(90)}],TH,'十 '+q[0]+'×'+q[1],'十字樑'));
+ANG.forEach(q=>DEFS['A'+q[0]+'_'+q[1]+'_'+q[2]]=defFrom(
+  [{xs:from0(q[1]),rot:0},{xs:from0(q[2]),rot:DEG(q[0])}],TH,
+  q[0]+'° '+q[1]+'×'+q[2],'斜樑'));
+
+const CATS=['直樑','薄樑','L 樑','T 樑','十字樑','斜樑'];
+const KEYS_BY_CAT={};
+CATS.forEach(c=>KEYS_BY_CAT[c]=Object.keys(DEFS).filter(k=>DEFS[k].cat===c));
+
+/* ── 零件縮圖：墨線圖鑑風 ── */
+function thumb(key){
+  const d=DEFS[key],S=0.72,pad=R+2;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  const bars=d.bars.map(b=>{
+    const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0,oy=(b.off&&b.off[1])||0;
+    const a=Math.min.apply(null,b.xs),z=Math.max.apply(null,b.xs);
+    const q={x1:a*c+ox,y1:a*si+oy,x2:z*c+ox,y2:z*si+oy,
+             holes:b.xs.map(x=>[x*c+ox,x*si+oy])};
+    [[q.x1,q.y1],[q.x2,q.y2]].forEach(w=>{
+      x0=Math.min(x0,w[0]);x1=Math.max(x1,w[0]);
+      y0=Math.min(y0,w[1]);y1=Math.max(y1,w[1]);});
+    return q;});
+  const vx=x0-pad,vy=y0-pad,vw=(x1-x0)+pad*2,vh=(y1-y0)+pad*2;
+  const FILL='#'+(d.col||0xf2c11c).toString(16).padStart(6,'0');
+  const seg=(b,col,w)=>'<line x1="'+b.x1+'" y1="'+b.y1+'" x2="'+b.x2+'" y2="'+b.y2+
+      '" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>';
+  let g='';
+  bars.forEach(b=>{g+=seg(b,FILL,2*R);});
+  bars.forEach(b=>{b.holes.forEach(h=>{
+    g+='<circle cx="'+h[0]+'" cy="'+h[1]+'" r="'+(HOLE/2)+'" fill="#1e2024"/>';});});
+  return '<svg width="'+(vw*S).toFixed(1)+'" height="'+(vh*S).toFixed(1)+
+    '" viewBox="'+vx+' '+vy+' '+vw+' '+vh+'">'+g+'</svg>';
+}
+
+/* ── 幾何 ─────────────────────────────────────────────
+   一根樑 = 一個封閉實體（watertight）：
+   上下蓋帶孔 + 外側壁 + 階梯狀孔內壁（沉孔／主孔／沉孔）
+   不用疊片，因此沒有內部重合面，匯出的 STL 不會破        */
+function cbDia(){const v=parseFloat((el('cbd')||{}).value);return isNaN(v)?6.10:v;}
+function cbDep(){const v=parseFloat((el('cbh')||{}).value);return isNaN(v)?0.80:v;}
+
+const CSEG=28, HSEG=24;
+// 膠囊外框，逆時針
+function barContour(xs){
+  const a=Math.min.apply(null,xs), b=Math.max.apply(null,xs), P=[];
+  for(let i=0;i<=CSEG;i++){const t=-Math.PI/2+i/CSEG*Math.PI;
+    P.push(new THREE.Vector2(b+R*Math.cos(t), R*Math.sin(t)));}
+  for(let i=0;i<=CSEG;i++){const t=Math.PI/2+i/CSEG*Math.PI;
+    P.push(new THREE.Vector2(a+R*Math.cos(t), R*Math.sin(t)));}
+  return P;
+}
+// 孔環，順時針（孔的內壁法線要朝軸心）
+function ring(cx,r){
+  const P=[];
+  for(let i=0;i<HSEG;i++){const t=-i/HSEG*Math.PI*2;
+    P.push(new THREE.Vector2(cx+r*Math.cos(t), r*Math.sin(t)));}
+  return P;
+}
+function pushWall(T,pts,zb,zt){
+  const n=pts.length;
+  for(let i=0;i<n;i++){
+    const p0=pts[i], p1=pts[(i+1)%n];
+    T.push(p0.x,p0.y,zb, p1.x,p1.y,zb, p1.x,p1.y,zt);
+    T.push(p0.x,p0.y,zb, p1.x,p1.y,zt, p0.x,p0.y,zt);
+  }
+}
+// 環狀肩部；up=true 表示朝 +Z
+function pushRing(T,inner,outer,z,up){
+  const n=inner.length;
+  for(let i=0;i<n;i++){
+    const a=inner[i],b=outer[i],c=outer[(i+1)%n],d=inner[(i+1)%n];
+    if(up){ T.push(a.x,a.y,z, c.x,c.y,z, b.x,b.y,z);
+            T.push(a.x,a.y,z, d.x,d.y,z, c.x,c.y,z); }
+    else  { T.push(a.x,a.y,z, b.x,b.y,z, c.x,c.y,z);
+            T.push(a.x,a.y,z, c.x,c.y,z, d.x,d.y,z); }
+  }
+}
+// 每個孔的規格：hd 主孔徑、cd 沉孔徑、ch 沉孔深（0 表示直孔）
+function holeSpec(xs,hd,th){
+  const ch=Math.min(cbDep(),th/2-0.3);
+  return xs.map(()=>({hd:hd,cd:cbDia(),ch:ch}));
+}
+function clampSpec(xs,spec){
+  let minGap=1e9;
+  for(let i=1;i<xs.length;i++)minGap=Math.min(minGap,Math.abs(xs[i]-xs[i-1]));
+  spec.forEach(sp=>{
+    if(sp.ch>0.05){
+      sp.cd=Math.min(sp.cd, xs.length>1?minGap-0.8:1e9, 2*R-1.0);
+      if(!(sp.cd>sp.hd+0.01))sp.ch=0;
+    } else sp.ch=0;
+  });
+  return spec;
+}
+function barSolidSpec(xs,spec,th){
+  clampSpec(xs,spec);
+  const zb=-th/2, zt=th/2;
+  const contour=barContour(xs);
+  const holes=xs.map((x,k)=>ring(x, spec[k].ch>0 ? spec[k].cd/2 : spec[k].hd/2));
+  const faces=THREE.ShapeUtils.triangulateShape(contour,holes);
+  let verts=contour.slice();
+  holes.forEach(h=>{verts=verts.concat(h);});
+  const T=[];
+  faces.forEach(f=>{
+    const A=verts[f[0]],B=verts[f[1]],C=verts[f[2]];
+    T.push(A.x,A.y,zt, B.x,B.y,zt, C.x,C.y,zt);   // 上蓋
+    T.push(A.x,A.y,zb, C.x,C.y,zb, B.x,B.y,zb);   // 下蓋，反向
+  });
+  pushWall(T,contour,zb,zt);                       // 外壁
+  xs.forEach((x,k)=>{
+    const sp=spec[k],outer=holes[k];
+    if(sp.ch>0){
+      const inner=ring(x,sp.hd/2);
+      pushWall(T,outer,zb,zb+sp.ch);               // 下沉孔
+      pushRing(T,inner,outer,zb+sp.ch,false);      // 下肩部
+      pushWall(T,inner,zb+sp.ch,zt-sp.ch);         // 主孔
+      pushRing(T,inner,outer,zt-sp.ch,true);       // 上肩部
+      pushWall(T,outer,zt-sp.ch,zt);               // 上沉孔
+    } else {
+      pushWall(T,outer,zb,zt);
+    }
+  });
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(T,3));
+  g.computeVertexNormals();
+  return g;
+}
+function barSolid(xs,hd,th){return barSolidSpec(xs,holeSpec(xs,hd,th),th);}
+function partPieces(p,holeD,grow){
+  const brace=(p.kind==='brace');
+  const th=(brace?TH:(DEFS[p.defKey].th||TH))+(grow||0);
+  const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
+  return bars.map(b=>{
+    const m=new THREE.Matrix4().makeRotationZ(b.rot||0);
+    m.setPosition((b.off&&b.off[0])||0,(b.off&&b.off[1])||0,0);
+    return {geo:barSolid(b.xs,holeD,th), mat:m};
+  });
+}
+
+/* ── 場景 ── */
+const stage=el('stage');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x2b2d33);
+const camera=new THREE.PerspectiveCamera(40,1,1,6000);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+stage.appendChild(renderer.domElement);
+const cv=renderer.domElement;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x3a3d44,0.85));
+const k1=new THREE.DirectionalLight(0xffffff,0.75);k1.position.set(90,130,120);scene.add(k1);
+const k2=new THREE.DirectionalLight(0xbdd0ea,0.25);k2.position.set(-110,-70,-60);scene.add(k2);
+const grid=new THREE.GridHelper(MOD*40,40,0x4a4d55,0x363940);
+grid.rotation.x=Math.PI/2;scene.add(grid);
+const world=new THREE.Group();scene.add(world);
+const markers=new THREE.Group();scene.add(markers);
+const gizmo=new THREE.Group();gizmo.visible=false;scene.add(gizmo);
+
+const SIDE={side:THREE.DoubleSide,roughness:.6};
+const MATS={};
+function matFor(c){if(!MATS[c])MATS[c]=new THREE.MeshStandardMaterial(Object.assign({color:c},SIDE));return MATS[c];}
+const MAT_BRACE=new THREE.MeshStandardMaterial(Object.assign({color:0xd4d6d9},SIDE));
+const MAT_SEL=new THREE.MeshStandardMaterial(Object.assign({color:0x4a80d9},SIDE));
+const partMat=p=>p.kind==='brace'?MAT_BRACE:matFor(DEFS[p.defKey].col);
+
+/* ── 相機 ── */
+const cam={theta:-0.92,phi:1.0,dist:210,target:V3()};
+function applyCam(){
+  const sp=Math.sin(cam.phi),cp=Math.cos(cam.phi);
+  camera.position.set(cam.target.x+cam.dist*sp*Math.cos(cam.theta),
+                      cam.target.y+cam.dist*sp*Math.sin(cam.theta),
+                      cam.target.z+cam.dist*cp);
+  camera.up.set(0,0,1);camera.lookAt(cam.target);
+}
+const VIEWS={iso:[-0.92,1.0],top:[-Math.PI/2,0.02],front:[-Math.PI/2,Math.PI/2]};
+function setView(k){const v=VIEWS[k];if(!v)return;cam.theta=v[0];cam.phi=v[1];applyCam();
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===k));}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+/* ── 狀態 ── */
+let parts=[],nextId=1,selPart=null,sel=[],spawnN=0,hoverKey=null,step=Math.PI/4;
+const used=new Set();
+const byId=id=>parts.find(p=>p.id===id);
+const socketsOf=p=>(p.kind==='brace')?[]:DEFS[p.defKey].sockets;
+const nHoles=p=>socketsOf(p).length/2;
+function partOfObj(o){while(o&&!o.userData.pid)o=o.parent;return o?byId(o.userData.pid):null;}
+function rootOf(p){let o=p.obj;while(o.parent&&o.parent!==world)o=o.parent;return partOfObj(o);}
+function jointOf(p){
+  let o=p.obj;
+  while(o&&o!==world){
+    const q=o.userData.pid?byId(o.userData.pid):null;
+    if(q&&q.link)return q;
+    o=o.parent;}
+  return rootOf(p);
+}
+function nameOf(p){return p.kind==='brace'?('斜撐 '+p.span.toFixed(1)+' mm'):DEFS[p.defKey].name;}
+// 一個孔有正反兩面，一根長插銷可以兩邊各接一支樑 → 兩面都佔滿才算滿
+const faceUsed=(p,i)=>used.has(p.id+':'+i);
+const holeUsed=(p,h)=>faceUsed(p,2*h)&&faceUsed(p,2*h+1);
+const holeHalf=(p,h)=>faceUsed(p,2*h)||faceUsed(p,2*h+1);
+
+function buildMeshes(p){
+  p.obj.children.filter(o=>o.isMesh).forEach(o=>p.obj.remove(o));
+  partPieces(p,HOLE).forEach(pc=>{
+    const m=new THREE.Mesh(pc.geo,partMat(p));
+    m.applyMatrix4(pc.mat);p.obj.add(m);});
+}
+function socketWorld(p,idx){
+  const s=socketsOf(p)[idx],q=p.obj.getWorldQuaternion(Q());
+  return {pos:V3().fromArray(s.pos).applyMatrix4(p.obj.matrixWorld),
+          axis:V3().fromArray(s.axis).applyQuaternion(q).normalize()};
+}
+// 一個孔 = 一根軸：中心點與軸向
+function holeWorld(p,h){
+  const a=socketWorld(p,2*h),b=socketWorld(p,2*h+1);
+  return {pos:a.pos.clone().add(b.pos).multiplyScalar(0.5),axis:a.axis.clone(),
+          plus:a,minus:b};
+}
+// 依「朝向哪一邊」挑貼合面
+function faceToward(p,h,dir){
+  const w=holeWorld(p,h);
+  let a = w.axis.dot(dir)>=0 ? 2*h : 2*h+1;
+  if(faceUsed(p,a)&&!faceUsed(p,a^1)) a^=1;   // 那一面滿了就走另一面
+  return a;
+}
+
+/* ── 歷程 ── */
+let history=[];
+function snapshot(){
+  return JSON.stringify({nextId:nextId,spawnN:spawnN,parts:parts.map(p=>{
+    const free=(p.obj.parent===world)&&!p.link;
+    return {id:p.id,kind:p.kind,defKey:p.defKey,span:p.span||16,layer:p.layer||0,
+      link:p.link?{hostId:p.link.hostId,hostSocket:p.link.hostSocket,
+                   viaId:p.link.viaId,viaSocket:p.link.viaSocket,roll:p.link.roll}:null,
+      aRef:p.aRef||null,bRef:p.bRef||null,
+      pos:free?p.obj.position.toArray():null,
+      rot:free?[p.obj.rotation.x,p.obj.rotation.y,p.obj.rotation.z]:null};})});
+}
+function pushHistory(){history.push(snapshot());if(history.length>60)history.shift();}
+function restore(json){
+  const s=JSON.parse(json);
+  while(world.children.length)world.remove(world.children[0]);
+  parts=[];used.clear();
+  s.parts.forEach(d=>{
+    const p={id:d.id,kind:d.kind,defKey:d.defKey,obj:new THREE.Group(),link:null,
+             span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0};
+    p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
+    if(d.pos)p.obj.position.fromArray(d.pos);
+    if(d.rot)p.obj.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
+    parts.push(p);});
+  s.parts.forEach(d=>{if(d.link)byId(d.id).link=d.link;});
+  parts.forEach(p=>{if(p.link)applyLink(p);});
+  parts.forEach(p=>{
+    if(p.link){used.add(p.link.hostId+':'+p.link.hostSocket);
+               used.add(p.link.viaId+':'+p.link.viaSocket);}
+    if(p.kind==='brace'){used.add(p.aRef.partId+':'+p.aRef.idx);
+                         used.add(p.bRef.partId+':'+p.bRef.idx);}});
+  nextId=s.nextId;spawnN=s.spawnN;selPart=null;sel=[];
+  layout();refresh();
+}
+function undo(){if(!history.length)return;restore(history.pop());refresh();}
+
+/* ── 接合 ── */
+function applyLink(root){
+  const L=root.link,host=byId(L.hostId),via=byId(L.viaId);
+  if(!host||!via)return;
+  world.add(root.obj);
+  root.obj.position.set(0,0,0);root.obj.quaternion.identity();
+  root.obj.updateMatrixWorld(true);
+  const rel=via.obj.matrixWorld.clone();
+  const sA=socketsOf(host)[L.hostSocket],sB=socketsOf(via)[L.viaSocket];
+  const childPos=V3().fromArray(sB.pos).applyMatrix4(rel);
+  const childAxis=V3().fromArray(sB.axis)
+    .applyQuaternion(Q().setFromRotationMatrix(rel)).normalize();
+  const axisA=V3().fromArray(sA.axis).normalize();
+  const q=Q().setFromAxisAngle(axisA,L.roll)
+    .multiply(Q().setFromUnitVectors(childAxis,axisA.clone().negate()));
+  host.obj.add(root.obj);
+  root.obj.quaternion.copy(q);
+  root.obj.position.copy(V3().fromArray(sA.pos)).sub(childPos.clone().applyQuaternion(q));
+  root.obj.updateMatrixWorld(true);
+}
+function bestRoll(root,L){
+  const host=byId(L.hostId),via=byId(L.viaId);
+  if(!host||!via)return 0;
+  const Qcur=root.obj.getWorldQuaternion(Q()),Qhost=host.obj.getWorldQuaternion(Q());
+  const par=root.obj.parent,sp=root.obj.position.clone(),sq=root.obj.quaternion.clone();
+  world.add(root.obj);
+  root.obj.position.set(0,0,0);root.obj.quaternion.identity();
+  root.obj.updateMatrixWorld(true);
+  const rel=via.obj.matrixWorld.clone();
+  const sB=socketsOf(via)[L.viaSocket];
+  const childAxis=V3().fromArray(sB.axis)
+    .applyQuaternion(Q().setFromRotationMatrix(rel)).normalize();
+  const axisA=V3().fromArray(socketsOf(host)[L.hostSocket].axis).normalize();
+  const q0=Q().setFromUnitVectors(childAxis,axisA.clone().negate());
+  if(par)par.add(root.obj);
+  root.obj.position.copy(sp);root.obj.quaternion.copy(sq);
+  root.obj.updateMatrixWorld(true);
+  const qd=Qhost.clone().invert().multiply(Qcur).multiply(q0.clone().invert());
+  const th=2*Math.atan2(V3(qd.x,qd.y,qd.z).dot(axisA),qd.w);
+  return isFinite(th)?th:0;
+}
+function doJoin(){
+  if(sel.length!==2)return;
+  const pA=byId(sel[0].partId),pB=byId(sel[1].partId),rB=rootOf(pB);
+  if(rootOf(pA).id===rB.id)return;
+  const wA=holeWorld(pA,sel[0].hole),wB=holeWorld(pB,sel[1].hole);
+  const dirAB=V3().subVectors(wB.pos,wA.pos);
+  if(dirAB.lengthSq()<1e-6)dirAB.copy(wA.axis);
+  pushHistory();
+  rB.link={hostId:pA.id,hostSocket:faceToward(pA,sel[0].hole,dirAB),
+           viaId:pB.id,viaSocket:faceToward(pB,sel[1].hole,dirAB.clone().negate()),roll:0};
+  let r=bestRoll(rB,rB.link);
+  if(step>0)r=Math.round(r/step)*step;
+  rB.link.roll=r;
+  used.add(rB.link.hostId+':'+rB.link.hostSocket);
+  used.add(rB.link.viaId+':'+rB.link.viaSocket);
+  applyLink(rB);selPart=rB.id;sel=[];layout();refresh();
+}
+function detach(p){
+  const r=jointOf(p); if(!r||!r.link)return;
+  pushHistory();
+  used.delete(r.link.hostId+':'+r.link.hostSocket);
+  used.delete(r.link.viaId+':'+r.link.viaSocket);
+  r.link=null;
+  const wp=r.obj.getWorldPosition(V3()),wq=r.obj.getWorldQuaternion(Q());
+  world.add(r.obj);r.obj.position.copy(wp).add(V3(0,-30,0));r.obj.quaternion.copy(wq);
+  r.layer=Math.round(r.obj.position.z/TH);
+  layout();refresh();
+}
+
+/* ── 斜撐 ── */
+function braceSolve(a,b){
+  const A=byId(a.partId),B=byId(b.partId); if(!A||!B)return null;
+  const wa=socketWorld(A,a.idx),wb=socketWorld(B,b.idx);
+  const n=wa.axis.clone(),v=V3().subVectors(wb.pos,wa.pos);
+  const off=v.dot(n),vp=v.clone().addScaledVector(n,-off);
+  return {wa:wa,n:n,vp:vp,d:vp.length(),off:Math.abs(off),par:Math.abs(wa.axis.dot(wb.axis))};
+}
+function braceRefs(){
+  const pA=byId(sel[0].partId),pB=byId(sel[1].partId);
+  const wA=holeWorld(pA,sel[0].hole);
+  const toCam=V3().subVectors(camera.position,wA.pos);
+  const iA=faceToward(pA,sel[0].hole,toCam);
+  const axA=socketWorld(pA,iA).axis;
+  const iB=faceToward(pB,sel[1].hole,axA);
+  return [{partId:pA.id,idx:iA},{partId:pB.id,idx:iB}];
+}
+function updateBrace(p){
+  const s=braceSolve(p.aRef,p.bRef);
+  if(!s||s.d<1){p.obj.visible=false;return;}
+  p.obj.visible=true;
+  const xd=s.vp.clone().normalize(),yd=V3().crossVectors(s.n,xd).normalize();
+  p.obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xd,yd,s.n));
+  p.obj.position.copy(s.wa.pos).addScaledVector(s.vp,0.5).addScaledVector(s.n,TH/2);
+  if(Math.abs(s.d-p.span)>0.02){p.span=s.d;buildMeshes(p);}
+  p.obj.updateMatrixWorld(true);
+}
+function addBrace(){
+  if(sel.length!==2)return;
+  pushHistory();
+  const rf=braceRefs();
+  const p={id:nextId++,kind:'brace',defKey:null,obj:new THREE.Group(),
+           span:16,link:null,aRef:rf[0],bRef:rf[1],layer:0};
+  p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
+  used.add(rf[0].partId+':'+rf[0].idx);used.add(rf[1].partId+':'+rf[1].idx);
+  parts.push(p);selPart=p.id;sel=[];layout();refresh();
+}
+
+/* ── 新增／刪除 ── */
+function addPart(defKey){
+  pushHistory();
+  const p={id:nextId++,kind:DEFS[defKey].kind,defKey:defKey,
+           obj:new THREE.Group(),link:null,layer:0};
+  p.obj.userData.pid=p.id;buildMeshes(p);
+  const col=spawnN%4,row=Math.floor(spawnN/4);
+  p.obj.position.set(col*40-56,-56-row*16,0);spawnN++;
+  world.add(p.obj);parts.push(p);selPart=p.id;sel=[];
+  layout();refresh();
+  if(parts.length===1)fitView();
+}
+function removePart(id){
+  const p=byId(id); if(!p)return;
+  pushHistory();
+  const kill=[];
+  p.obj.traverse(o=>{if(o.userData.pid)kill.push(o.userData.pid);});
+  parts.forEach(q=>{if(q.kind==='brace'&&
+    (kill.indexOf(q.aRef.partId)>=0||kill.indexOf(q.bRef.partId)>=0)&&
+    kill.indexOf(q.id)<0)kill.push(q.id);});
+  kill.forEach(k=>{
+    const q=byId(k); if(!q)return;
+    if(q.kind==='brace'){used.delete(q.aRef.partId+':'+q.aRef.idx);
+                         used.delete(q.bRef.partId+':'+q.bRef.idx);}
+    if(q.link){used.delete(q.link.hostId+':'+q.link.hostSocket);
+               used.delete(q.link.viaId+':'+q.link.viaSocket);}});
+  if(p.obj.parent)p.obj.parent.remove(p.obj);
+  kill.forEach(k=>{const q=byId(k);if(q&&q.obj.parent)q.obj.parent.remove(q.obj);});
+  parts=parts.filter(q=>kill.indexOf(q.id)<0);
+  selPart=null;sel=[];layout();refresh();
+}
+function layout(){
+  scene.updateMatrixWorld(true);
+  parts.filter(p=>p.kind==='brace').forEach(updateBrace);
+  scene.updateMatrixWorld(true);
+}
+
+/* ── 孔的軸線標記 ── */
+const axGeo=new THREE.CylinderGeometry(0.62,0.62,TH+4.4,10);axGeo.rotateX(Math.PI/2);
+const hitGeo=new THREE.CylinderGeometry(2.7,2.7,TH+4.4,8);hitGeo.rotateX(Math.PI/2);
+const M_AX=new THREE.MeshBasicMaterial({color:0xa9adb5,transparent:true,opacity:.55});
+const M_AX_HI=new THREE.MeshBasicMaterial({color:0xffffff});
+const M_AX_ON=new THREE.MeshBasicMaterial({color:0x4a80d9});
+const M_HIT=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+let mlist=[],hoverPartId=null;
+// 只有「游標停在上面」或「已被選取」的零件才顯示孔軸，避免整個畫面都是線
+function visibleParts(){
+  const v=new Set();
+  if(hoverPartId)v.add(hoverPartId);
+  if(selPart)v.add(selPart);
+  sel.forEach(x=>v.add(x.partId));
+  return v;
+}
+function rebuildMarkers(){
+  while(markers.children.length)markers.remove(markers.children[0]);
+  mlist=[];let free=0;
+  const vis=visibleParts();
+  parts.forEach(p=>{
+    if(!p.obj.visible)return;
+    const show=vis.has(p.id);
+    for(let h=0;h<nHoles(p);h++){
+      if(holeUsed(p,h))continue;
+      free++;
+      if(!show)continue;
+      const w=holeWorld(p,h),k=p.id+'#'+h;
+      const q=Q().setFromUnitVectors(V3(0,0,1),w.axis);
+      const shaft=new THREE.Mesh(axGeo,M_AX);
+      shaft.position.copy(w.pos);shaft.quaternion.copy(q);
+      if(holeHalf(p,h))shaft.scale.set(0.55,0.55,1);   // 只剩一面可用
+      const hit=new THREE.Mesh(hitGeo,M_HIT);
+      hit.position.copy(w.pos);hit.quaternion.copy(q);
+      hit.userData.hole={partId:p.id,hole:h};
+      markers.add(shaft);markers.add(hit);
+      mlist.push({key:k,ms:[shaft]});
+    }});
+  paintMarkers();
+  return free;
+}
+function paintMarkers(){
+  mlist.forEach(m=>{
+    const on=sel.some(x=>(x.partId+'#'+x.hole)===m.key);
+    const hv=hoverKey===m.key;
+    const mat=on?M_AX_ON:(hv?M_AX_HI:M_AX);
+    m.ms.forEach(o=>{o.material=mat;
+      o.scale.set(on||hv?2.1:1,on||hv?2.1:1,on?1.12:1);});
+  });
+}
+
+/* ── 旋轉 Gizmo ─────────────────────────────────────────
+   平常：零件旁三個小小的雙頭彎箭頭
+   按住：展開成整圈刻度量角盤，拖到哪填到哪，旁邊跳角度   */
+const GZ_COL={x:0xe05a50,y:0x7cb648,z:0x5590d9};
+const gzAxis={};
+let gzHover=null;
+
+function mkArrow(){
+  // 平面幾何（環帶 + 三角形），單向箭頭
+  const g=new THREE.Group();
+  const mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.42,
+    depthTest:false,side:THREE.DoubleSide});
+  const A0=Math.PI*0.30, LEN=Math.PI*1.36, A1=A0+LEN, r=3.1, w=0.3;
+  const arc=new THREE.Mesh(new THREE.RingGeometry(r-w,r+w,44,1,A0,LEN),mat);
+  g.add(arc);
+  const tri=new THREE.Shape();
+  tri.moveTo(-0.2, 1.15); tri.lineTo(-0.2,-1.15); tri.lineTo(2.25,0);
+  const head=new THREE.Mesh(new THREE.ShapeGeometry(tri),mat);
+  head.position.set(r*Math.cos(A1), r*Math.sin(A1), 0);
+  head.rotation.z=A1+Math.PI/2;          // 三角形朝切線方向
+  g.add(head);
+  g.children.forEach(o=>{o.renderOrder=999;o.raycast=function(){};});
+  return {g:g,mat:mat};
+}
+function mkDial(col){
+  const g=new THREE.Group();
+  const lm=new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.6,depthTest:false});
+  const pts=[];
+  for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;pts.push(V3(Math.cos(a),Math.sin(a),0));}
+  const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),lm);
+  const tp=[];
+  for(let i=0;i<24;i++){const a=i/24*Math.PI*2,r0=(i%6===0)?0.78:((i%3===0)?0.85:0.91);
+    tp.push(V3(Math.cos(a)*r0,Math.sin(a)*r0,0),V3(Math.cos(a),Math.sin(a),0));}
+  const ticks=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(tp),lm);
+  const fm=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.2,
+    depthTest:false,side:THREE.DoubleSide});
+  const fill=new THREE.Mesh(new THREE.RingGeometry(0,0.99,4,1,0,0.0001),fm);
+  [ring,ticks,fill].forEach(o=>{o.renderOrder=997;o.raycast=function(){};g.add(o);});
+  g.visible=false;
+  return {g:g,lm:lm,fill:fill};
+}
+(function buildGizmo(){
+  ['x','y','z'].forEach(a=>{
+    const grp=new THREE.Group();
+    if(a==='x')grp.rotation.y=Math.PI/2;      // 區域 +Z 對到整體 X
+    if(a==='y')grp.rotation.x=-Math.PI/2;     // 區域 +Z 對到整體 Y
+    const ar=mkArrow();
+    const holder=new THREE.Group();holder.add(ar.g);
+    const hit=new THREE.Mesh(new THREE.SphereGeometry(5.0,10,8),
+      new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthTest:false,depthWrite:false}));
+    hit.userData.gz=a;hit.renderOrder=999;holder.add(hit);
+    const dl=mkDial(GZ_COL[a]);
+    grp.add(holder);grp.add(dl.g);
+    gizmo.add(grp);
+    gzAxis[a]={grp:grp,holder:holder,mat:ar.mat,dial:dl};
+  });
+})();
+
+// 零件本身在區域座標中的範圍（不含接在後面的東西）
+function localExtent(p){
+  if(p.kind==='brace')return {c:V3(0,0,0),e:V3(p.span/2+R,R,TH/2)};
+  const d=DEFS[p.defKey];
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  d.bars.forEach(b=>{
+    const co=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0,oy=(b.off&&b.off[1])||0;
+    b.xs.forEach(x=>{const px=x*co+ox,py=x*si+oy;
+      x0=Math.min(x0,px);x1=Math.max(x1,px);y0=Math.min(y0,py);y1=Math.max(y1,py);});});
+  return {c:V3((x0+x1)/2,(y0+y1)/2,0),
+          e:V3((x1-x0)/2+R,(y1-y0)/2+R,(d.th||TH)/2)};
+}
+function setFill(A,a0,ang){
+  const st=(ang<0)?(a0+ang):a0, ln=Math.abs(ang);
+  A.dial.fill.geometry.dispose();
+  A.dial.fill.geometry=new THREE.RingGeometry(0,0.99,60,1,st,Math.max(ln,0.0001));
+}
+function updateGizmo(){
+  const t=rotTarget();
+  const dragging=!!(drag&&drag.mode==='gizmo');
+  if(!t){ if(!dragging)gizmo.visible=false; return; }
+  if(!dragging){
+    gizmo.visible=true;
+    const p=t.part, pad=7;
+    if(t.kind==='free'){
+      const ex=localExtent(p);
+      gizmo.position.copy(ex.c.clone().applyMatrix4(p.obj.matrixWorld));
+      gizmo.quaternion.copy(p.obj.getWorldQuaternion(Q()));
+      ['x','y','z'].forEach(k=>gzAxis[k].grp.visible=true);
+      const dz={x:ex.e.x+pad, y:ex.e.y+pad, z:ex.e.z+pad};
+      const dr={x:Math.max(ex.e.y,ex.e.z)+pad+4,
+                y:Math.max(ex.e.x,ex.e.z)+pad+4,
+                z:Math.max(ex.e.x,ex.e.y)+pad+4};
+      ['x','y','z'].forEach(k=>{
+        gzAxis[k].holder.position.set(0,0,dz[k]);
+        gzAxis[k].dial.g.position.set(0,0,dz[k]);   // 盤與箭頭同一個平面
+        gzAxis[k].dial.g.scale.setScalar(dr[k]);
+      });
+    } else {
+      const L=p.link,host=byId(L.hostId);
+      if(!host){gizmo.visible=false;return;}
+      const w=socketWorld(host,L.hostSocket);
+      gizmo.position.copy(w.pos).addScaledVector(w.axis,TH*0.6);
+      gizmo.quaternion.copy(Q().setFromUnitVectors(V3(0,0,1),w.axis));
+      gzAxis.x.grp.visible=false;gzAxis.y.grp.visible=false;gzAxis.z.grp.visible=true;
+      const ex=localExtent(p), rr=Math.max(15,Math.max(ex.e.x,ex.e.y)*0.65);
+      gzAxis.z.holder.position.set(rr,0,0);        // 箭頭坐在盤緣上
+      gzAxis.z.dial.g.position.set(0,0,0);
+      gzAxis.z.dial.g.scale.setScalar(rr);
+    }
+  }
+  ['x','y','z'].forEach(k=>{
+    const A=gzAxis[k];
+    const act=dragging?(drag.axisKey===k):(gzHover===k);
+    A.dial.g.visible=act;
+    A.holder.visible=dragging?false:true;
+    A.mat.opacity=act?0.95:(gzHover?0.12:0.42);
+  });
+}
+
+/* ── 互動 ── */
+const ray=new THREE.Raycaster();
+let drag=null,moved=0,pinch=null;
+const dragPlane=new THREE.Plane();
+function setRay(e){
+  const r=cv.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,
+                                      -((e.clientY-r.top)/r.height)*2+1),camera);
+}
+function castAt(e){
+  setRay(e);
+  const gz=gizmo.visible?ray.intersectObjects(gizmo.children,true).filter(h=>h.object.userData.gz):[];
+  const hs=ray.intersectObjects(markers.children,false).filter(h=>h.object.userData.hole);
+  const ps=ray.intersectObjects(world.children,true);
+  return {gz:gz,hs:hs,ps:ps};
+}
+const holeWins=(hs,ps)=>hs.length&&(!ps.length||hs[0].distance<ps[0].distance+2.0);
+
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);moved=0;
+  if(e.button===2||e.shiftKey){drag={mode:'pan',x:e.clientX,y:e.clientY};return;}
+  const c=castAt(e);
+  if(c.gz.length){
+    const t=rotTarget();
+    if(t){
+      const a=c.gz[0].object.userData.gz;
+      const axis=V3(a==='x'?1:0,a==='y'?1:0,a==='z'?1:0)
+        .applyQuaternion(gizmo.getWorldQuaternion(Q())).normalize();
+      const ctr=gzAxis[a].dial.g.getWorldPosition(V3());
+      dragPlane.setFromNormalAndCoplanarPoint(axis,ctr);
+      const hit=ray.ray.intersectPlane(dragPlane,V3());
+      if(hit){
+        pushHistory();
+        const v0=V3().subVectors(hit,ctr).normalize();
+        const gq=gzAxis[a].grp.getWorldQuaternion(Q());
+        const bx=V3(1,0,0).applyQuaternion(gq),by=V3(0,1,0).applyQuaternion(gq);
+        drag={mode:'gizmo',axis:axis,axisKey:a,ctr:ctr,v0:v0,
+              a0:Math.atan2(v0.dot(by),v0.dot(bx)),
+              t:t,qStart:t.kind==='free'?t.part.obj.quaternion.clone():null,
+              rollStart:t.kind==='link'?t.part.link.roll:0,
+              x:e.clientX,y:e.clientY};
+        setFill(gzAxis[a],drag.a0,0);
+        return;
+      }
+    }
+  }
+  if(!holeWins(c.hs,c.ps)&&c.ps.length){
+    const p=partOfObj(c.ps[0].object),r=p?rootOf(p):null;
+    if(r&&!r.link&&r.kind!=='brace'){
+      dragPlane.setFromNormalAndCoplanarPoint(V3(0,0,1),r.obj.position.clone());
+      const hit=ray.ray.intersectPlane(dragPlane,V3());
+      if(hit){drag={mode:'move',root:r,off:V3().subVectors(r.obj.position,hit),
+                    x:e.clientX,y:e.clientY,dirty:false};return;}
+    }
+  }
+  drag={mode:'orbit',x:e.clientX,y:e.clientY};
+});
+
+cv.addEventListener('pointermove',e=>{
+  if(!drag){
+    const c=castAt(e);
+    let k=null,hp=null;
+    if(holeWins(c.hs,c.ps)){
+      const hh=c.hs[0].object.userData.hole;
+      k=hh.partId+'#'+hh.hole;hp=hh.partId;
+    } else if(c.ps.length){
+      const pp=partOfObj(c.ps[0].object);hp=pp?pp.id:null;
+    }
+    hoverKey=k;
+    if(hp!==hoverPartId){hoverPartId=hp;rebuildMarkers();}
+    else paintMarkers();
+    gzHover=c.gz.length?c.gz[0].object.userData.gz:null;
+    cv.style.cursor=c.gz.length?'grab':(k?'pointer':(c.ps.length?'grab':'default'));
+    return;
+  }
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  moved+=Math.abs(dx)+Math.abs(dy);
+  if(drag.mode==='gizmo'){
+    setRay(e);
+    const hit=ray.ray.intersectPlane(dragPlane,V3());
+    if(hit){
+      const v1=V3().subVectors(hit,drag.ctr).normalize();
+      let ang=Math.atan2(V3().crossVectors(drag.v0,v1).dot(drag.axis),drag.v0.dot(v1));
+      if(step>0)ang=Math.round(ang/step)*step;
+      if(drag.t.kind==='free'){
+        drag.t.part.obj.quaternion.copy(Q().setFromAxisAngle(drag.axis,ang).multiply(drag.qStart));
+      } else {
+        drag.t.part.link.roll=drag.rollStart+ang;
+        applyLink(drag.t.part);
+      }
+      setFill(gzAxis[drag.axisKey],drag.a0,ang);
+      const bd=el('angBadge'),pv=drag.ctr.clone().project(camera);
+      bd.style.display='block';
+      bd.style.left=((pv.x*0.5+0.5)*innerWidth)+'px';
+      bd.style.top=((-pv.y*0.5+0.5)*innerHeight)+'px';
+      bd.textContent=(ang>0?'+':'')+Math.round(ang*180/Math.PI)+'°';
+      layout();rebuildMarkers();syncSliders();
+    }
+    cv.style.cursor='grabbing';
+  } else if(drag.mode==='move'){
+    if(!drag.dirty){pushHistory();drag.dirty=true;}
+    setRay(e);
+    const hit=ray.ray.intersectPlane(dragPlane,V3());
+    if(hit){
+      const np=hit.clone().add(drag.off);
+      if(el('gridsnap').checked){np.x=Math.round(np.x/MOD)*MOD;np.y=Math.round(np.y/MOD)*MOD;}
+      np.z=(drag.root.layer||0)*TH;
+      drag.root.obj.position.copy(np);layout();rebuildMarkers();
+    }
+    cv.style.cursor='grabbing';
+  } else if(drag.mode==='pan'){
+    const s=cam.dist*0.0016;
+    const right=V3().subVectors(camera.position,cam.target).cross(camera.up).normalize();
+    const upv=V3().crossVectors(right,V3().subVectors(camera.position,cam.target)).normalize();
+    cam.target.addScaledVector(right,dx*s).addScaledVector(upv,dy*s);applyCam();
+  } else {
+    cam.theta-=dx*0.008;
+    cam.phi=Math.max(0.08,Math.min(Math.PI-0.08,cam.phi-dy*0.008));applyCam();
+  }
+  drag.x=e.clientX;drag.y=e.clientY;
+});
+
+cv.addEventListener('pointerup',e=>{
+  const wasGizmo=drag&&drag.mode==='gizmo';
+  if(drag&&moved<6&&!wasGizmo)pick(e);
+  drag=null;cv.style.cursor='default';
+  gzHover=null;el('angBadge').style.display='none';
+  if(wasGizmo)refresh();
+});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();
+  cam.dist=Math.max(25,Math.min(2000,cam.dist*(1+Math.sign(e.deltaY)*0.12)));applyCam();
+},{passive:false});
+cv.addEventListener('touchstart',e=>{if(e.touches.length===2){drag=null;
+  pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                   e.touches[0].clientY-e.touches[1].clientY);}},{passive:true});
+cv.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinch){
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                     e.touches[0].clientY-e.touches[1].clientY);
+  cam.dist=Math.max(25,Math.min(2000,cam.dist*pinch/d));pinch=d;applyCam();}},{passive:true});
+cv.addEventListener('touchend',()=>{pinch=null;});
+cv.addEventListener('pointerleave',()=>{
+  if(drag)return;
+  gzHover=null;
+  if(hoverPartId!==null||hoverKey!==null){hoverPartId=null;hoverKey=null;rebuildMarkers();}
+});
+
+function pick(e){
+  const c=castAt(e);
+  if(holeWins(c.hs,c.ps)){
+    const s=c.hs[0].object.userData.hole;
+    const i=sel.findIndex(x=>x.partId===s.partId&&x.hole===s.hole);
+    if(i>=0)sel.splice(i,1); else {sel.push(s);if(sel.length>2)sel.shift();}
+    selPart=null;refresh();return;
+  }
+  if(c.ps.length){const p=partOfObj(c.ps[0].object);
+    selPart=p?(selPart===p.id?null:p.id):null;sel=[];}
+  else {selPart=null;sel=[];}
+  refresh();
+}
+function resize(){
+  const w=Math.max(1,stage.clientWidth),h=Math.max(1,stage.clientHeight);
+  renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
+
+/* ── 零件庫：類別 → 零件 ── */
+let curCat=CATS[0];
+const SHORT={'直樑':'直','薄樑':'薄','L 樑':'L','T 樑':'T','十字樑':'十','斜樑':'斜'};
+function buildCats(){
+  const c=el('popCats');c.innerHTML='';
+  CATS.forEach(cat=>{
+    const n=KEYS_BY_CAT[cat].length; if(!n)return;
+    const b=document.createElement('button');
+    b.title=cat;
+    b.innerHTML='<span class="t">'+(SHORT[cat]||cat)+'</span><span class="n">'+n+'</span>';
+    b.className=(cat===curCat)?'on':'';
+    b.onclick=()=>{curCat=cat;buildCats();buildList();openDock();};
+    c.appendChild(b);});
+  const sp=document.createElement('div');sp.className='sp';c.appendChild(sp);
+  const pin=document.createElement('button');
+  pin.className='pin'+(document.body.classList.contains('pinned')?' on':'');
+  pin.title='釘選抽屜';
+  pin.innerHTML='<svg width="15" height="15" viewBox="0 0 16 16" fill="none" '+
+    'stroke="currentColor" stroke-width="1.4"><path d="M6 2h4l-.6 4 2.1 2.2H4.5L6.6 6z"/>'+
+    '<path d="M8 8.2V14"/></svg>';
+  pin.onclick=()=>{
+    const on=document.body.classList.toggle('pinned');
+    pin.classList.toggle('on',on);
+    if(on)openDock();
+    setTimeout(resize,300);
+  };
+  c.appendChild(pin);
+}
+function buildList(){
+  const c=el('popList');c.innerHTML='';
+  el('flyH').textContent=curCat+' · '+KEYS_BY_CAT[curCat].length+' 種';
+  KEYS_BY_CAT[curCat].forEach(k=>{
+    const b=document.createElement('button');b.className='prow';
+    b.title=DEFS[k].name;
+    b.innerHTML='<span class="lbl">'+DEFS[k].name+'</span>'+thumb(k);
+    b.onclick=()=>addPart(k);
+    c.appendChild(b);});
+}
+// 自動開合
+const dock=el('dock');let dockT=null;
+function openDock(){clearTimeout(dockT);dock.classList.add('open');}
+function closeDock(){
+  if(document.body.classList.contains('pinned'))return;
+  clearTimeout(dockT);
+  dockT=setTimeout(()=>dock.classList.remove('open'),200);
+}
+dock.addEventListener('pointerenter',openDock);
+dock.addEventListener('pointerleave',closeDock);
+buildCats();buildList();
+
+function closePops(){
+  el('popTol').classList.remove('open');
+  el('btnTol').classList.remove('on');
+}
+function togglePop(pop,btn){
+  const open=pop.classList.contains('open');
+  closePops();
+  if(!open){pop.classList.add('open');btn.classList.add('on');}
+}
+el('btnTol').onclick=e=>{e.stopPropagation();togglePop(el('popTol'),el('btnTol'));};
+document.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.pop')||e.target.closest('.chrome'))return;
+  closePops();});
+
+function rotTarget(){
+  if(!selPart)return null;
+  const p=byId(selPart); if(!p)return null;
+  const j=jointOf(p); if(!j)return null;
+  if(j.link)return {kind:'link',part:j};
+  if(j.kind!=='brace')return {kind:'free',part:j};
+  return null;
+}
+const deg360=r=>((Math.round(r*180/Math.PI)%360)+360)%360;
+function syncSliders(){
+  const t=rotTarget(); if(!t)return;
+  if(t.kind==='link'){
+    const d=deg360(t.part.link.roll);
+    el('ang').value=d;el('angVal').textContent=d+'°';
+  } else {
+    ['x','y','z'].forEach(a=>{
+      const d=deg360(t.part.obj.rotation[a]);
+      el('ang'+a.toUpperCase()).value=d;
+      el('val'+a.toUpperCase()).textContent=d+'°';});
+  }
+}
+
+/* ── 選取零件的浮動面板：跟著零件在畫面上的位置 ── */
+const selpanel=el('selpanel');
+function placeSelPanel(){
+  const p=selPart?byId(selPart):null, t=rotTarget();
+  selpanel.style.display=(p&&t)?'block':'none';
+}
+
+function refresh(){
+  parts.forEach(p=>{
+    const on=p.id===selPart;
+    p.obj.children.forEach(o=>{if(o.isMesh)
+      o.material=on?MAT_SEL:partMat(p);});});
+  const free=rebuildMarkers();
+  el('cnt').textContent=parts.length;
+  el('gcnt').textContent=world.children.length;
+  el('scnt').textContent=free;
+  el('empty').style.display=parts.length?'none':'flex';
+
+  const p=selPart?byId(selPart):null, t=rotTarget();
+  const isLink=!!(t&&t.kind==='link'), isFree=!!(t&&t.kind==='free');
+  el('selname').textContent=p?nameOf(p):'—';
+  el('sellayer').textContent=isFree?('層 '+(t.part.layer||0)):(isLink?'已接合':'');
+  el('jointBox').style.display=isLink?'block':'none';
+  el('axisBox').style.display=isFree?'block':'none';
+  syncSliders();
+  el('detach').disabled=!isLink;
+  el('flip').disabled=!isLink;
+  el('side').disabled=!isLink;
+  el('layerUp').disabled=!isFree;
+  el('layerDown').disabled=!isFree;
+  el('del').disabled=!selPart;
+  placeSelPanel();
+
+  const bar=el('actionbar'),msg=el('actionmsg');
+  if(sel.length===2){
+    bar.style.display='flex';
+    const pA=byId(sel[0].partId),pB=byId(sel[1].partId);
+    const same=rootOf(pA).id===rootOf(pB).id;
+    const rf=braceRefs(),s=braceSolve(rf[0],rf[1]);
+    let txt='';
+    if(s){const m=s.d/MOD;
+      txt='跨距 <b>'+s.d.toFixed(2)+'</b> mm　'+m.toFixed(2)+' 模距'+
+        (Math.abs(m-Math.round(m))<0.03?'　正版樑接得上':'　只有客製件接得上');
+      if(s.off>0.1)txt+='<br><span class="w">兩孔不同平面，差 '+s.off.toFixed(1)+' mm</span>';
+      if(s.par<0.99)txt+='<br><span class="w">兩孔軸向不平行</span>';
+      if(same)txt+='<br>同一組件，只能架斜撐';}
+    msg.innerHTML=txt;
+    el('join').disabled=same;el('brace').disabled=false;
+  } else if(sel.length===1){
+    bar.style.display='flex';
+    msg.innerHTML='已選 1 根軸　再點第二根';
+    el('join').disabled=true;el('brace').disabled=true;
+  } else bar.style.display='none';
+
+  el('expFused').disabled=!parts.length;
+  el('expParts').disabled=!parts.length;
+  el('undo').disabled=history.length===0;
+}
+
+/* ── 控制 ── */
+let angDirty=false;
+el('ang').oninput=()=>{
+  const t=rotTarget(); if(!t||t.kind!=='link')return;
+  let deg=parseFloat(el('ang').value);
+  if(step>0)deg=Math.round(deg/(step*180/Math.PI))*(step*180/Math.PI);
+  t.part.link.roll=deg*Math.PI/180;applyLink(t.part);
+  el('angVal').textContent=Math.round(deg)+'°';
+  layout();rebuildMarkers();
+};
+el('ang').onpointerdown=()=>{if(!angDirty){pushHistory();angDirty=true;}};
+el('ang').onchange=()=>{angDirty=false;layout();refresh();};
+['x','y','z'].forEach(a=>{
+  const A=a.toUpperCase(),inp=el('ang'+A),out=el('val'+A);
+  inp.oninput=()=>{
+    const t=rotTarget(); if(!t||t.kind!=='free')return;
+    let deg=parseFloat(inp.value);
+    if(step>0)deg=Math.round(deg/(step*180/Math.PI))*(step*180/Math.PI);
+    t.part.obj.rotation[a]=deg*Math.PI/180;
+    out.textContent=Math.round(deg)+'°';
+    layout();rebuildMarkers();};
+  inp.onpointerdown=()=>{if(!angDirty){pushHistory();angDirty=true;}};
+  inp.onchange=()=>{angDirty=false;layout();refresh();};
+});
+document.querySelectorAll('#stepSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#stepSeg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const d=parseFloat(b.dataset.step);
+  step=d>0?d*Math.PI/180:0;});
+el('join').onclick=doJoin;
+el('brace').onclick=addBrace;
+el('detach').onclick=()=>{const t=rotTarget();if(t)detach(t.part);};
+el('flip').onclick=()=>{
+  const t=rotTarget(); if(!t||t.kind!=='link')return;
+  pushHistory();const L=t.part.link;
+  used.delete(L.viaId+':'+L.viaSocket);L.viaSocket^=1;used.add(L.viaId+':'+L.viaSocket);
+  applyLink(t.part);layout();refresh();};
+el('side').onclick=()=>{
+  const t=rotTarget(); if(!t||t.kind!=='link')return;
+  pushHistory();const L=t.part.link;
+  used.delete(L.hostId+':'+L.hostSocket);L.hostSocket^=1;used.add(L.hostId+':'+L.hostSocket);
+  applyLink(t.part);layout();refresh();};
+function setLayer(d){
+  const t=rotTarget(); if(!t||t.kind!=='free')return;
+  pushHistory();t.part.layer=(t.part.layer||0)+d;
+  t.part.obj.position.z=t.part.layer*TH;layout();refresh();}
+el('layerUp').onclick=()=>setLayer(1);
+el('layerDown').onclick=()=>setLayer(-1);
+el('del').onclick=()=>removePart(selPart);
+el('undo').onclick=undo;
+['cbd','cbh'].forEach(id=>{el(id).onchange=()=>{
+  parts.forEach(buildMeshes);layout();refresh();};});
+
+/* ── 公差測試件：一片上排一整列不同參數的孔 ── */
+let sweepMode='comp';
+document.querySelectorAll('#sweepSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#sweepSeg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');sweepMode=b.dataset.sweep;});
+
+el('genTest').onclick=()=>{
+  const st=parseFloat(el('tStart').value), sp=parseFloat(el('tStep').value);
+  const n=Math.max(2,Math.min(20,parseInt(el('tN').value,10)||6));
+  if(isNaN(st)||isNaN(sp)){toast('起始值和級距要填數字。',true);return;}
+  const th=TH, total=n+1, xs=[];
+  for(let i=0;i<total;i++)xs.push(i*MOD-(total-1)*MOD/2);
+  const spec=[{hd:2.6,cd:0,ch:0}];          // 方向記號：一個明顯較小的孔
+  const vals=[];
+  for(let i=0;i<n;i++){
+    const v=st+sp*i; vals.push(v);
+    if(sweepMode==='comp') spec.push({hd:HOLE+v, cd:cbDia(), ch:cbDep()});
+    else                   spec.push({hd:holeD(), cd:cbDia(), ch:v});
+  }
+  const geo=barSolidSpec(xs,spec,th);
+  const tris=trisOf(geo,new THREE.Matrix4());
+  const a=auditTris(tris);
+  if(a.open||a.dup||a.deg){
+    toast('測試件幾何有問題（破口 '+a.open+'）。把級距或孔數調小再試。',true);return;}
+  const tag=sweepMode==='comp'?'comp':'cbdepth';
+  writeSTL(tris,'tolerance-'+tag+'-'+st.toFixed(2)+'to'+vals[n-1].toFixed(2)+'.stl');
+  const label=sweepMode==='comp'?'主孔補償':'沉孔深度';
+  toast('測試件已匯出 · '+n+' 個孔，平躺列印即可。\n'+
+        '從記號小孔那端數起：\n'+
+        vals.map((v,i)=>'　第 '+(i+1)+' 孔　'+label+' '+v.toFixed(2)+' mm').join('\n'));
+};
+
+function fitView(){
+  if(!parts.length){cam.target.set(0,0,0);cam.dist=210;applyCam();return;}
+  const box=new THREE.Box3().setFromObject(world);
+  cam.target.copy(box.getCenter(V3()));
+  cam.dist=Math.max(60,box.getSize(V3()).length()*1.8);applyCam();}
+el('fit').onclick=fitView;
+
+addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA/.test((e.target.tagName||'')))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}
+  if(e.key==='Escape'){closePops();selPart=null;sel=[];refresh();}
+  else if(e.key==='Delete'||e.key==='Backspace'){if(selPart){e.preventDefault();removePart(selPart);}}
+  else if(e.key.toLowerCase()==='f')fitView();
+  else if(e.key==='1')setView('iso');
+  else if(e.key==='2')setView('top');
+  else if(e.key==='3')setView('front');
+});
+
+/* ── 存讀檔 ── */
+function dl(blob,name){
+  const u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),4000);}
+el('save').onclick=()=>dl(new Blob([snapshot()],{type:'application/json'}),'technic-build.json');
+el('load').onclick=()=>el('file').click();
+el('file').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{pushHistory();restore(r.result);fitView();}
+                catch(err){alert('讀檔失敗：'+err.message);}};
+  r.readAsText(f);e.target.value='';};
+
+/* ── STL ── */
+function trisOf(geo,mat){
+  const g=geo.index?geo.toNonIndexed():geo,pos=g.attributes.position,out=[];
+  const a=V3(),b=V3(),c=V3();
+  for(let i=0;i<pos.count;i+=3){
+    a.fromBufferAttribute(pos,i).applyMatrix4(mat);
+    b.fromBufferAttribute(pos,i+1).applyMatrix4(mat);
+    c.fromBufferAttribute(pos,i+2).applyMatrix4(mat);
+    out.push([a.clone(),b.clone(),c.clone()]);}
+  return out;}
+function writeSTL(tris,name){
+  const buf=new ArrayBuffer(84+tris.length*50),dv=new DataView(buf);
+  dv.setUint32(80,tris.length,true);
+  let o=84;const n=V3(),ab=V3(),ac=V3();
+  tris.forEach(t=>{
+    ab.subVectors(t[1],t[0]);ac.subVectors(t[2],t[0]);
+    n.crossVectors(ab,ac).normalize();
+    dv.setFloat32(o,n.x,true);dv.setFloat32(o+4,n.y,true);dv.setFloat32(o+8,n.z,true);o+=12;
+    t.forEach(v=>{dv.setFloat32(o,v.x,true);dv.setFloat32(o+4,v.y,true);dv.setFloat32(o+8,v.z,true);o+=12;});
+    dv.setUint16(o,0,true);o+=2;});
+  dl(new Blob([buf],{type:'model/stl'}),name);}
+const holeD=()=>{const v=parseFloat(el('comp').value);return HOLE+(isNaN(v)?0:v);};
+
+// 水密檢查：每條有向邊只能出現一次，且必須有反向邊配對
+function auditTris(tris){
+  const K=v=>v.x.toFixed(3)+','+v.y.toFixed(3)+','+v.z.toFixed(3);
+  const m=new Map(); let deg=0;
+  tris.forEach(t=>{
+    for(let e=0;e<3;e++){
+      const a=K(t[e]),b=K(t[(e+1)%3]);
+      if(a===b){deg++;continue;}
+      const k=a+'>'+b; m.set(k,(m.get(k)||0)+1);
+    }});
+  let open=0,dup=0;
+  m.forEach((c,k)=>{
+    if(c>1)dup++;
+    const i=k.indexOf('>');
+    if(!m.has(k.slice(i+1)+'>'+k.slice(0,i)))open++;});
+  return {tri:tris.length,open:open,dup:dup,deg:deg};
+}
+function toast(msg,bad){
+  const t=el('toast');t.textContent=msg;
+  t.className=bad?'bad':'';t.style.display='block';
+  clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},10000);
+}
+/* ── 布林聯集：manifold-3d（WASM） ────────────────────
+   零件之間的交界要真的融成一體，只能靠布林運算。
+   第一次匯出時才載入，載不到就退回「多個重疊實體」。   */
+let MF=null,mfPending=null;
+function loadManifold(){
+  if(MF)return Promise.resolve(MF);
+  if(mfPending)return mfPending;
+  mfPending=import('https://cdn.jsdelivr.net/npm/manifold-3d@2.3.1/manifold.js')
+    .then(m=>m.default())
+    .then(w=>{w.setup();MF=w;return w;});
+  return mfPending;
+}
+// 三角形湯 → 共用頂點的索引網格（布林運算的前提）
+function indexTris(tris){
+  const map=new Map(),verts=[],idx=[];
+  const K=v=>Math.round(v.x*1e4)+','+Math.round(v.y*1e4)+','+Math.round(v.z*1e4);
+  tris.forEach(t=>t.forEach(v=>{
+    const k=K(v);let i=map.get(k);
+    if(i===undefined){i=verts.length/3;map.set(k,i);verts.push(v.x,v.y,v.z);}
+    idx.push(i);}));
+  return {vertProperties:new Float32Array(verts),triVerts:new Uint32Array(idx)};
+}
+function toSolid(w,tris){
+  const d=indexTris(tris);
+  const mesh=new w.Mesh({numProp:3,vertProperties:d.vertProperties,triVerts:d.triVerts});
+  mesh.merge();
+  return new w.Manifold(mesh);
+}
+function solidToTris(m){
+  const mesh=m.getMesh(),vp=mesh.vertProperties,tv=mesh.triVerts,np=mesh.numProp||3,out=[];
+  for(let i=0;i<tv.length;i+=3){
+    const t=[];
+    for(let k=0;k<3;k++){const b=tv[i+k]*np;t.push(V3(vp[b],vp[b+1],vp[b+2]));}
+    out.push(t);}
+  return out;
+}
+function unionTris(w,groups){
+  const solids=groups.map(g=>toSolid(w,g));
+  let u;
+  try{
+    u=solids.length===1?solids[0]:w.Manifold.union(solids);
+    const out=solidToTris(u);
+    return out;
+  } finally {
+    solids.forEach(sd=>{ if(sd!==u){try{sd.delete();}catch(e){}} });
+    if(u){try{u.delete();}catch(e){}}
+  }
+}
+function busy(on){
+  el('expFused').disabled=on||!parts.length;
+  el('expParts').disabled=on||!parts.length;
+}
+
+function auditAll(hd){
+  const rows=[];let bad=0;
+  parts.forEach(p=>{
+    if(!p.obj.visible)return;
+    partPieces(p,hd,0).forEach((pc,i)=>{
+      const a=auditTris(trisOf(pc.geo,pc.mat));
+      if(a.open||a.dup||a.deg){bad++;
+        rows.push(nameOf(p)+(i?(' 第'+(i+1)+'段'):'')+
+          ' — 破口 '+a.open+'，重複邊 '+a.dup+'，退化 '+a.deg);}
+    });});
+  return {bad:bad,rows:rows};
+}
+// 收集世界座標下的每個實體（微量互穿 0.02 mm，讓布林運算避開完全共平面）
+function worldGroups(hd){
+  const g=[];
+  parts.forEach(p=>{if(!p.obj.visible)return;
+    partPieces(p,hd,0.02).forEach(pc=>
+      g.push(trisOf(pc.geo,p.obj.matrixWorld.clone().multiply(pc.mat))));});
+  return g;
+}
+el('expFused').onclick=()=>{
+  const hd=holeD(),rp=auditAll(hd);
+  if(rp.bad){toast('先修好幾何再匯出 — 有 '+rp.bad+' 個實體不水密：\n'+
+    rp.rows.slice(0,6).join('\n'),true);return;}
+  const groups=worldGroups(hd);
+  busy(true);toast('正在做布林聯集…第一次需要下載運算模組。');
+  loadManifold().then(w=>{
+    const tris=unionTris(w,groups);
+    writeSTL(tris,'technic-fused.stl');
+    busy(false);
+    toast('融合完成 · '+groups.length+' 個實體聯集成單一封閉模型，'+
+          tris.length.toLocaleString()+' 個三角形。接合處與斜撐重疊處已真正融為一體。');
+  }).catch(err=>{
+    // 退路：直接輸出重疊實體，交給切片軟體處理
+    const tris=[];groups.forEach(g=>tris.push.apply(tris,g));
+    writeSTL(tris,'technic-fused.stl');
+    busy(false);
+    toast('布林運算模組載入失敗，已改用重疊實體輸出（切片軟體仍可列印，但檢視器會看到交界）。\n'+
+          '原因：'+(err&&err.message?err.message:err)+'\n'+
+          '若是用 file:// 直接開啟，改用本機伺服器開啟即可，例如在檔案所在資料夾執行：python -m http.server',true);
+  });};
+el('expParts').onclick=()=>{
+  const hd=holeD();
+  const rp=auditAll(hd);
+  toast(rp.bad
+    ? ('有 '+rp.bad+' 個實體不水密：\n'+rp.rows.slice(0,6).join('\n'))
+    : ('分件匯出 · 每個實體都通過水密檢查。'),
+    rp.bad>0);
+  parts.forEach((p,i)=>{if(!p.obj.visible)return;
+    setTimeout(()=>{
+      const tris=[];
+      const gs=partPieces(p,hd,0).map(pc=>trisOf(pc.geo,pc.mat));
+      const tag=p.kind==='brace'?'brace-'+p.span.toFixed(1)+'mm':p.defKey;
+      const name=String(i+1).padStart(2,'0')+'-'+tag+'.stl';
+      if(gs.length===1||!MF){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); }
+      else { try{ writeSTL(unionTris(MF,gs),name); }
+             catch(e){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); } }
+    },i*350);});};
+
+resize();setView('iso');refresh();
+(function loop(){requestAnimationFrame(loop);updateGizmo();placeSelPanel();
+  renderer.render(scene,camera);})();
+})();
+</script>
+</body>
+</html>
