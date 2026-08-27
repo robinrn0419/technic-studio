@@ -319,8 +319,36 @@ body.show-intro #empty{display:flex!important}
   依序試插正版插銷，找出「要出點力才進得去、進去後不會自己掉」的那一個。</p>
 </div>
 
+<div id="ghosthint" style="display:none;position:fixed;left:50%;bottom:22px;
+  transform:translateX(-50%);background:#1e2024;border:1px solid #3a3d44;
+  color:#c8ccd2;padding:8px 16px;border-radius:8px;font-size:13px;z-index:40">
+  <b id="ghostvar">—</b>　·　滾輪轉方向　·　F 翻面　·　點一下放下　·　丟垃圾桶取消
+</div>
+
+<div id="trash" title="丟到這裡刪除">
+  <svg viewBox="0 0 40 44" width="46" height="50">
+    <g id="trashlid"><rect x="6" y="8" width="28" height="4" rx="2"/>
+      <rect x="16" y="4" width="8" height="4" rx="1.5"/></g>
+    <path d="M9 14 h22 l-2 25 a3 3 0 0 1 -3 3 h-12 a3 3 0 0 1 -3 -3 z"/>
+    <rect x="15" y="19" width="3" height="17" rx="1.5" opacity=".45"/>
+    <rect x="22" y="19" width="3" height="17" rx="1.5" opacity=".45"/>
+  </svg>
+</div>
+
+<style>
+#trash{position:fixed;right:22px;bottom:22px;display:none;z-index:41;
+  pointer-events:none;
+  padding:10px;border-radius:12px;border:1px solid #3a3d44;background:#1e2024;
+  fill:#8d8f94;cursor:pointer;transition:border-color .16s,background .16s,fill .16s}
+#trash.on{display:block}
+#trash.open{border-color:#c4281c;background:#2a1c1a;fill:#e0574a}
+#trashlid{transform-origin:20px 10px;transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
+#trash.open #trashlid{transform:rotate(-38deg) translate(-4px,-2px)}
+</style>
+
 <div class="selpanel" id="selpanel">
   <div class="hd"><span class="nm" id="selname">—</span><span class="ly" id="sellayer"></span></div>
+  <button id="selRoot" style="display:none;margin:4px 0 8px;width:100%">選取整組（雙擊零件也可以）</button>
 
   <div id="jointBox" style="display:none">
     <div class="jointrow"><span>繞接合軸</span><b id="angVal">0°</b></div>
@@ -874,7 +902,12 @@ const MATS={};
 function matFor(c){if(!MATS[c])MATS[c]=new THREE.MeshStandardMaterial(Object.assign({color:c},SIDE));return MATS[c];}
 const MAT_BRACE=new THREE.MeshStandardMaterial(Object.assign({color:0xd4d6d9},SIDE));
 const MAT_SEL=new THREE.MeshStandardMaterial(Object.assign({color:0x4a80d9},SIDE));
-const partMat=p=>p.kind==='brace'?MAT_BRACE:matFor(DEFS[p.defKey].col);
+const MAT_GHOST=new THREE.MeshStandardMaterial(Object.assign(
+  {color:0x6fa8f5,transparent:true,opacity:0.45,depthWrite:false},SIDE));
+const MAT_GHOST_FREE=new THREE.MeshStandardMaterial(Object.assign(
+  {color:0x8d8f94,transparent:true,opacity:0.28,depthWrite:false},SIDE));
+const partMat=p=>p.pending?(p.link?MAT_GHOST:MAT_GHOST_FREE)
+  :(p.kind==='brace'?MAT_BRACE:matFor(DEFS[p.defKey].col));
 
 /* ── 相機 ── */
 const cam={theta:-0.92,phi:1.0,dist:210,target:V3()};
@@ -970,7 +1003,10 @@ function snapshot(){
       pos:free?p.obj.position.toArray():null,
       rot:free?[p.obj.rotation.x,p.obj.rotation.y,p.obj.rotation.z]:null};})});
 }
-function pushHistory(){history.push(snapshot());if(history.length>60)history.shift();}
+let histLock=false;
+function popHistory(){ if(history.length)history.pop(); }
+function pushHistory(){
+  if(histLock)return;history.push(snapshot());if(history.length>60)history.shift();}
 function restore(json){
   const s=JSON.parse(json);
   while(world.children.length)world.remove(world.children[0]);
@@ -1037,22 +1073,41 @@ function bestRoll(root,L){
   const th=2*Math.atan2(V3(qd.x,qd.y,qd.z).dot(axisA),qd.w);
   return isFinite(th)?th:0;
 }
+function asmSize(root){let n=0;parts.forEach(q=>{if(rootOf(q).id===root.id)n++;});return n;}
 function doJoin(){
   if(sel.length!==2)return;
-  const pA=byId(sel[0].partId),pB=byId(sel[1].partId),rB=rootOf(pB);
+  let s0=sel[0], s1=sel[1];
+  // 永遠搬零件數較少的那一邊，避免整個組合體被拉去遷就一根散件
+  if(asmSize(rootOf(byId(s0.partId)))<asmSize(rootOf(byId(s1.partId)))){
+    const t=s0;s0=s1;s1=t;
+  }
+  const pA=byId(s0.partId),pB=byId(s1.partId),rB=rootOf(pB);
   if(rootOf(pA).id===rB.id)return;
-  const wA=holeWorld(pA,sel[0].hole),wB=holeWorld(pB,sel[1].hole);
+  const wA=holeWorld(pA,s0.hole),wB=holeWorld(pB,s1.hole);
   const dirAB=V3().subVectors(wB.pos,wA.pos);
   if(dirAB.lengthSq()<1e-6)dirAB.copy(wA.axis);
   pushHistory();
-  rB.link={hostId:pA.id,hostSocket:faceToward(pA,sel[0].hole,dirAB),
-           viaId:pB.id,viaSocket:faceToward(pB,sel[1].hole,dirAB.clone().negate()),roll:0};
+  rB.link={hostId:pA.id,hostSocket:faceToward(pA,s0.hole,dirAB),
+           viaId:pB.id,viaSocket:faceToward(pB,s1.hole,dirAB.clone().negate()),roll:0};
   let r=bestRoll(rB,rB.link);
   if(step>0)r=Math.round(r/step)*step;
   rB.link.roll=r;
   used.add(rB.link.hostId+':'+rB.link.hostSocket);
   used.add(rB.link.viaId+':'+rB.link.viaSocket);
   applyLink(rB);selPart=rB.id;sel=[];layout();refresh();
+}
+/* 連續接合：接完之後把選取移到新零件的下一個空孔，
+   這樣可以「挑零件→挑零件→挑零件」一路接下去 */
+function selectNextFreeHole(p){
+  if(!p)return false;
+  const n=nHoles(p);
+  for(let h=0;h<n;h++){
+    if(holeUsed(p,h))continue;
+    if(holeMode(p,h)==='solid'||holeMode(p,h)==='pfill')continue;
+    if(pinBusy.has(p.id+'#'+h))continue;
+    sel=[{partId:p.id,hole:h}];refresh();return true;
+  }
+  return false;
 }
 function detach(p){
   const r=jointOf(p); if(!r||!r.link)return;
@@ -1105,6 +1160,141 @@ function addBrace(){
   parts.push(p);selPart=p.id;sel=[];layout();refresh();
 }
 
+/* ── 放置預覽：零件跟著滑鼠，吸附到最近的孔，再點一下才確定 ── */
+let ghost=null;            // 暫定零件的 id
+let ghostSnap=null;        // 目前吸附到的孔 {partId,hole}
+let ghostHole=null;        // 自動選出的對位孔（離游標最近）
+let ghostFlip=false;       // 正反面：決定凸銷朝上或朝下
+let ghostRoll=0;           // 繞軸角度，滾輪控制
+let ghostEvt=null;         // 最後一次滑鼠事件，滾輪時重算用
+
+// 零件上所有可以拿來對位的孔
+function usableHoles(p){
+  const out=[],n=nHoles(p);
+  for(let i=0;i<n;i++) if(holeMode(p,i)!=='solid') out.push(i);
+  return out.length?out:[0];
+}
+
+// 收集游標附近所有可用的空孔（含世界座標）
+function freeHolesNearRay(maxD2){
+  const out=[];
+  parts.forEach(q=>{
+    if(q.pending||!q.obj.visible||q.kind==='brace')return;
+    const n=nHoles(q);
+    for(let h=0;h<n;h++){
+      if(holeUsed(q,h))continue;
+      const m=holeMode(q,h); if(m==='solid'||m==='pfill')continue;
+      if(pinBusy.has(q.id+'#'+h))continue;
+      const w=holeWorld(q,h);
+      if(ray.ray.distanceSqToPoint(w.pos)<maxD2)
+        out.push({partId:q.id,hole:h,pos:w.pos.clone()});
+    }
+  });
+  return out;
+}
+function updateGhost(e){
+  const g=ghost?byId(ghost):null; if(!g)return;
+  if(e){ghostEvt=e;setRay(e);} else if(ghostEvt){setRay(ghostEvt);} else return;
+
+  const cand=freeHolesNearRay(2500);        // 50mm 內的候選孔
+  let tgt=null, pick=null;
+  if(cand.length){
+    // 先把零件自由擺在游標處（深度對齊最近的候選孔），再比對每一對孔
+    const ref=cand.reduce((a,b)=>
+      ray.ray.distanceSqToPoint(a.pos)<=ray.ray.distanceSqToPoint(b.pos)?a:b);
+    const nrm=camera.getWorldDirection(V3()).clone();
+    const pl=new THREE.Plane().setFromNormalAndCoplanarPoint(nrm,ref.pos);
+    const hit=V3();
+    if(ray.ray.intersectPlane(pl,hit)){
+      if(g.link){g.link=null;world.add(g.obj);}
+      g.obj.position.copy(hit);
+      g.obj.quaternion.setFromAxisAngle(V3(0,0,1),ghostRoll);
+      g.obj.updateMatrixWorld(true);
+      // 零件的每個孔 × 附近的每個空孔，取最近的一對
+      let bd=1e9;
+      usableHoles(g).forEach(gh=>{
+        const gp=holeWorld(g,gh).pos;
+        cand.forEach(c=>{
+          const d=gp.distanceToSquared(c.pos);
+          if(d<bd){bd=d;tgt=c;pick=gh;}
+        });
+      });
+      if(bd>900){tgt=null;pick=null;}       // 30mm 外就不吸附
+    }
+  }
+  if(tgt){
+    ghostSnap=tgt;ghostHole=pick;
+    const host=byId(tgt.partId), wA=holeWorld(host,tgt.hole);
+    const toCam=V3().subVectors(camera.position,wA.pos);
+    const via=faceToward(g,pick,toCam.clone().negate());
+    g.link={hostId:host.id,hostSocket:faceToward(host,tgt.hole,toCam),
+            viaId:g.id,
+            viaSocket:ghostFlip?(via^1):via,     // 正反面：凸銷朝上或朝下
+            roll:ghostRoll};
+    applyLink(g);
+    el('ghostvar').textContent='繞軸 '+Math.round(ghostRoll*180/Math.PI)+'°';
+  } else {
+    if(ghostSnap){ghostSnap=null;g.link=null;world.add(g.obj);}
+    ghostHole=null;
+    el('ghostvar').textContent='自由擺放　·　繞軸 '+
+      Math.round(ghostRoll*180/Math.PI)+'°';
+    // 沒有可吸附的孔：貼著 z=0 平面跟著滑鼠，滾輪一樣能轉
+    const pl=new THREE.Plane(V3(0,0,1),0),hit=V3();
+    if(ray.ray.intersectPlane(pl,hit))g.obj.position.copy(hit);
+    g.obj.quaternion.setFromAxisAngle(V3(0,0,1),ghostRoll);
+  }
+  g.obj.children.forEach(o=>{if(o.isMesh)o.material=partMat(g);});
+  layout();scheduleMarkers();
+}
+function startGhost(defKey){
+  cancelGhost();
+  pushHistory();
+  const p={id:nextId++,kind:DEFS[defKey].kind,defKey:defKey,
+           obj:new THREE.Group(),link:null,layer:0,pending:true};
+  p.obj.userData.pid=p.id;buildMeshes(p);
+  world.add(p.obj);parts.push(p);
+  ghost=p.id;ghostSnap=null;ghostHole=null;ghostFlip=false;ghostRoll=0;ghostEvt=null;
+  p.obj.children.forEach(o=>{if(o.isMesh)o.material=partMat(p);});
+  el('ghosthint').style.display='block';
+  el('trash').classList.add('on');
+  layout();refresh();
+}
+// 游標是否落在垃圾桶上
+function overTrash(e){
+  if(!e)return false;
+  const t=el('trash'); if(!t.classList.contains('on'))return false;
+  const r=t.getBoundingClientRect();
+  return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+}
+function trashHover(e){
+  const t=el('trash');
+  t.classList.toggle('open',overTrash(e));
+}
+function commitGhost(){
+  const g=ghost?byId(ghost):null; if(!g)return false;
+  g.pending=false;
+  if(g.link){used.add(g.link.hostId+':'+g.link.hostSocket);
+             used.add(g.link.viaId+':'+g.link.viaSocket);}
+  else g.layer=Math.round(g.obj.position.z/TH);
+  ghost=null;ghostSnap=null;selPart=g.id;sel=[];
+  el('ghosthint').style.display='none';
+  el('trash').classList.remove('on','open');
+  if(parts.length===1)fitView();
+  layout();refresh();
+  return true;
+}
+function cancelGhost(){
+  const g=ghost?byId(ghost):null;
+  ghost=null;ghostSnap=null;
+  el('ghosthint').style.display='none';
+  el('trash').classList.remove('on','open');
+  if(!g)return;
+  const i=parts.indexOf(g); if(i>=0)parts.splice(i,1);
+  if(g.obj.parent)g.obj.parent.remove(g.obj);
+  popHistory();
+  layout();refresh();
+}
+
 /* ── 新增／刪除 ── */
 function addPart(defKey){
   pushHistory();
@@ -1113,7 +1303,22 @@ function addPart(defKey){
   p.obj.userData.pid=p.id;buildMeshes(p);
   const col=spawnN%4,row=Math.floor(spawnN/4);
   p.obj.position.set(col*40-56,-56-row*16,0);spawnN++;
-  world.add(p.obj);parts.push(p);selPart=p.id;sel=[];
+  world.add(p.obj);parts.push(p);
+  // 若目前正選著一個空孔，新零件直接接上去，省掉「生成→搬運→對位」
+  const anchor=(sel.length===1)?sel[0]:null;
+  if(anchor&&byId(anchor.partId)){
+    const host=byId(anchor.partId);
+    const hn=nHoles(p);
+    let hh=0;                                  // 用新零件的第一個可用孔
+    for(let i=0;i<hn;i++){ if(holeMode(p,i)!=='solid'){hh=i;break;} }
+    sel=[anchor,{partId:p.id,hole:hh}];
+    selPart=p.id;
+    histLock=true; doJoin(); histLock=false;   // 已在本函式開頭記錄過一次
+    selectNextFreeHole(p);                     // 準備好接下一片
+    if(parts.length===1)fitView();
+    return;
+  }
+  selPart=p.id;sel=[];
   layout();refresh();
   if(parts.length===1)fitView();
 }
@@ -1168,22 +1373,38 @@ function syncPinFills(){
   pinBusy=new Set();contactFaces=new Set();
   const want=new Set(), soc=[];
   parts.forEach(p=>{
-    if(!p.obj.visible)return;
+    if(!p.obj.visible||p.pending)return;
     const ss=socketsOf(p);
     for(let i=0;i<ss.length;i++)
       soc.push({id:p.id,i:i,male:!!ss[i].male,w:socketWorld(p,i)});
   });
-  for(let a=0;a<soc.length;a++)for(let b=a+1;b<soc.length;b++){
-    const A=soc[a],B=soc[b];
-    if(A.id===B.id)continue;
-    if(A.w.pos.distanceToSquared(B.w.pos)>0.36)continue;   // 位置要重合
-    if(A.w.axis.dot(B.w.axis)>-0.985)continue;             // 方向要相對
+  // 空間雜湊：只比對位置本來就相鄰的接點，避免所有接點兩兩比對
+  const CELL=0.8, grid=new Map();
+  const ck=(x,y,z)=>x+','+y+','+z;
+  soc.forEach((e,idx)=>{
+    e.cx=Math.round(e.w.pos.x/CELL);
+    e.cy=Math.round(e.w.pos.y/CELL);
+    e.cz=Math.round(e.w.pos.z/CELL);
+    const k=ck(e.cx,e.cy,e.cz);
+    let L=grid.get(k); if(!L){L=[];grid.set(k,L);}
+    L.push(idx);
+  });
+  const pairUp=(A,B)=>{
+    if(A.id===B.id)return;
+    if(A.w.pos.distanceToSquared(B.w.pos)>0.36)return;   // 位置要重合
+    if(A.w.axis.dot(B.w.axis)>-0.985)return;             // 方向要相對
     if(A.male&&!B.male){want.add(B.id+'#'+(B.i>>1));pinBusy.add(A.id+'#'+(A.i>>1));}
     else if(B.male&&!A.male){want.add(A.id+'#'+(A.i>>1));pinBusy.add(B.id+'#'+(B.i>>1));}
-    else if(!A.male&&!B.male){                              // 孔對孔貼合：內側面互相咬合
+    else if(!A.male&&!B.male){                            // 孔對孔貼合：內側面互相咬合
       contactFaces.add(A.id+':'+A.i);contactFaces.add(B.id+':'+B.i);
     }
-  }
+  };
+  soc.forEach((A,ia)=>{
+    for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){
+      const L=grid.get(ck(A.cx+dx,A.cy+dy,A.cz+dz)); if(!L)continue;
+      for(const ib of L) if(ib>ia) pairUp(A,soc[ib]);
+    }
+  });
   parts.forEach(q=>{
     if(q.kind==='brace')return;
     const d=DEFS[q.defKey]; if(!d||!d.holeKeys)return;
@@ -1205,6 +1426,8 @@ function syncPinFills(){
     }
   });
 }
+let markDirty=false;
+function scheduleMarkers(){markDirty=true;}
 function rebuildMarkers(){
   while(markers.children.length)markers.remove(markers.children[0]);
   mlist=[];let free=0;
@@ -1394,7 +1617,21 @@ function castAt(e){
 }
 const holeWins=(hs,ps)=>hs.length&&(!ps.length||hs[0].distance<ps[0].distance+2.0);
 
+cv.addEventListener('dblclick',e=>{
+  const c=castAt(e);
+  if(c.ps.length){
+    let o=c.ps[0].object;
+    while(o&&!o.userData.pid)o=o.parent;
+    if(o){selPart=rootOf(byId(o.userData.pid)).id;sel=[];refresh();}
+  }
+});
+
 cv.addEventListener('pointerdown',e=>{
+  if(ghost!==null&&e.button===0){
+    e.preventDefault();
+    if(overTrash(e))cancelGhost(); else commitGhost();
+    return;
+  }
   cv.setPointerCapture(e.pointerId);moved=0;
   if(e.button===2||e.shiftKey){drag={mode:'pan',x:e.clientX,y:e.clientY};return;}
   const c=castAt(e);
@@ -1434,7 +1671,26 @@ cv.addEventListener('pointerdown',e=>{
   drag={mode:'orbit',x:e.clientX,y:e.clientY};
 });
 
+cv.addEventListener('wheel',e=>{
+  // 拖曳既有零件時：滾輪轉零件，不縮放視角
+  if(drag&&drag.mode==='move'&&drag.root){
+    e.preventDefault();e.stopImmediatePropagation();
+    const st=(step>0?step:Math.PI/12);
+    drag.root.obj.quaternion.premultiply(
+      Q().setFromAxisAngle(V3(0,0,1),(e.deltaY>0?1:-1)*st));
+    layout();scheduleMarkers();
+    return;
+  }
+  if(ghost===null)return;                 // 沒在放置也沒在拖曳時，滾輪照常縮放
+  e.preventDefault();e.stopImmediatePropagation();   // 放置中滾輪專門用來轉零件
+  const st=(step>0?step:Math.PI/12);
+  ghostRoll+=(e.deltaY>0?1:-1)*st;
+  ghostSnap=null;                         // 強制重算
+  updateGhost(null);
+},{passive:false});
+
 cv.addEventListener('pointermove',e=>{
+  if(ghost!==null){updateGhost(e);trashHover(e);return;}
   if(!drag){
     const c=castAt(e);
     let k=null,hp=null;
@@ -1445,7 +1701,7 @@ cv.addEventListener('pointermove',e=>{
       const pp=partOfObj(c.ps[0].object);hp=pp?pp.id:null;
     }
     hoverKey=k;
-    if(hp!==hoverPartId){hoverPartId=hp;rebuildMarkers();}
+    if(hp!==hoverPartId){hoverPartId=hp;scheduleMarkers();}
     else paintMarkers();
     gzHover=c.gz.length?c.gz[0].object.userData.gz:null;
     cv.style.cursor=c.gz.length?'grab':(k?'pointer':(c.ps.length?'grab':'default'));
@@ -1472,7 +1728,7 @@ cv.addEventListener('pointermove',e=>{
       bd.style.left=((pv.x*0.5+0.5)*innerWidth)+'px';
       bd.style.top=((-pv.y*0.5+0.5)*innerHeight)+'px';
       bd.textContent=(ang>0?'+':'')+Math.round(ang*180/Math.PI)+'°';
-      layout();rebuildMarkers();syncSliders();
+      layout();scheduleMarkers();syncSliders();
     }
     cv.style.cursor='grabbing';
   } else if(drag.mode==='move'){
@@ -1483,7 +1739,8 @@ cv.addEventListener('pointermove',e=>{
       const np=hit.clone().add(drag.off);
       if(el('gridsnap').checked){np.x=Math.round(np.x/MOD)*MOD;np.y=Math.round(np.y/MOD)*MOD;}
       np.z=(drag.root.layer||0)*TH;
-      drag.root.obj.position.copy(np);layout();rebuildMarkers();
+      drag.root.obj.position.copy(np);layout();scheduleMarkers();
+      el('trash').classList.add('on');trashHover(e);
     }
     cv.style.cursor='grabbing';
   } else if(drag.mode==='pan'){
@@ -1499,6 +1756,12 @@ cv.addEventListener('pointermove',e=>{
 });
 
 cv.addEventListener('pointerup',e=>{
+  if(drag&&drag.mode==='move'&&drag.root&&overTrash(e)){
+    const id=drag.root.id;drag=null;
+    el('trash').classList.remove('on','open');
+    removePart(id);return;
+  }
+  if(ghost===null)el('trash').classList.remove('on','open');
   const wasGizmo=drag&&drag.mode==='gizmo';
   if(drag&&moved<6&&!wasGizmo)pick(e);
   drag=null;cv.style.cursor='default';
@@ -1520,7 +1783,7 @@ cv.addEventListener('touchend',()=>{pinch=null;});
 cv.addEventListener('pointerleave',()=>{
   if(drag)return;
   gzHover=null;
-  if(hoverPartId!==null||hoverKey!==null){hoverPartId=null;hoverKey=null;rebuildMarkers();}
+  if(hoverPartId!==null||hoverKey!==null){hoverPartId=null;hoverKey=null;scheduleMarkers();}
 });
 
 function pick(e){
@@ -1578,7 +1841,7 @@ function buildList(){
     const b=document.createElement('button');b.className='prow';
     b.title=DEFS[k].name;
     b.innerHTML='<span class="lbl">'+DEFS[k].name+'</span>'+thumb(k);
-    b.onclick=()=>addPart(k);
+    b.onclick=()=>startGhost(k);
     c.appendChild(b);});
 }
 // 自動開合
@@ -1654,6 +1917,8 @@ function refresh(){
   el('empty').style.display=(parts.length&&!document.body.classList.contains('show-intro'))?'none':'flex';
 
   const p=selPart?byId(selPart):null, t=rotTarget();
+  const rootSel=p?rootOf(p):null;
+  el('selRoot').style.display=(p&&rootSel&&rootSel.id!==p.id)?'block':'none';
   const isLink=!!(t&&t.kind==='link'), isFree=!!(t&&t.kind==='free');
   el('selname').textContent=p?nameOf(p):'—';
   el('sellayer').textContent=isFree?('層 '+(t.part.layer||0)):(isLink?'已接合':'');
@@ -1718,7 +1983,7 @@ el('ang').oninput=()=>{
   if(step>0)deg=Math.round(deg/(step*180/Math.PI))*(step*180/Math.PI);
   t.part.link.roll=deg*Math.PI/180;applyLink(t.part);
   el('angVal').textContent=Math.round(deg)+'°';
-  layout();rebuildMarkers();
+  layout();scheduleMarkers();
 };
 el('ang').onpointerdown=()=>{if(!angDirty){pushHistory();angDirty=true;}};
 el('ang').onchange=()=>{angDirty=false;layout();refresh();};
@@ -1730,7 +1995,7 @@ el('ang').onchange=()=>{angDirty=false;layout();refresh();};
     if(step>0)deg=Math.round(deg/(step*180/Math.PI))*(step*180/Math.PI);
     t.part.obj.rotation[a]=deg*Math.PI/180;
     out.textContent=Math.round(deg)+'°';
-    layout();rebuildMarkers();};
+    layout();scheduleMarkers();};
   inp.onpointerdown=()=>{if(!angDirty){pushHistory();angDirty=true;}};
   inp.onchange=()=>{angDirty=false;layout();refresh();};
 });
@@ -1750,6 +2015,21 @@ function applyHoleMode(mode){
 el('hmRound').onclick=()=>applyHoleMode('round');
 el('hmCross').onclick=()=>applyHoleMode('cross');
 el('hmSolid').onclick=()=>applyHoleMode('solid');
+el('selRoot').onclick=()=>{
+  const p=selPart?byId(selPart):null; if(!p)return;
+  selPart=rootOf(p).id;sel=[];refresh();
+};
+window.addEventListener('keydown',e=>{
+  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
+  const k=e.key.toLowerCase();
+  if(k==='d'&&selPart){                      // 複製目前零件
+    const p=byId(selPart); if(p&&p.kind!=='brace'){e.preventDefault();addPart(p.defKey);}
+  } else if(k==='f'&&ghost!==null){ ghostFlip=!ghostFlip;ghostSnap=null;updateGhost(null); }
+  else if(k==='escape'){ if(ghost!==null)cancelGhost(); else {sel=[];refresh();} }
+  else if(k==='n'&&selPart){                 // 跳到這個零件的下一個空孔
+    e.preventDefault();selectNextFreeHole(byId(selPart));
+  }
+});
 el('join').onclick=doJoin;
 el('brace').onclick=addBrace;
 el('detach').onclick=()=>{const t=rotTarget();if(t)detach(t.part);};
@@ -2001,7 +2281,9 @@ loadManifold().then(()=>{
 }).catch(()=>{
   toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
 });
-(function loop(){requestAnimationFrame(loop);updateGizmo();placeSelPanel();
+(function loop(){requestAnimationFrame(loop);
+  if(markDirty){markDirty=false;rebuildMarkers();}
+  updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
 })();
 </script>
