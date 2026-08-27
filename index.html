@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TrunnionLab 科技零件工作台 — Technic 相容零件線上拼裝與 3D 列印輸出</title>
-<meta name="description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。支援直樑、L 樑、T 樑、十字樑與任意角度斜撐，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
+<meta name="description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
 <link rel="canonical" href="https://robinrn0419.github.io/technic-studio/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TrunnionLab">
 <meta property="og:title" content="TrunnionLab — 科技零件工作台">
-<meta property="og:description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。支援直樑、L 樑、T 樑、十字樑與任意角度斜撐，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
+<meta property="og:description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
 <meta property="og:url" content="https://robinrn0419.github.io/technic-studio/">
 <meta property="og:locale" content="zh_TW">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TrunnionLab — 科技零件工作台">
-<meta name="twitter:description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。支援直樑、L 樑、T 樑、十字樑與任意角度斜撐，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
+<meta name="twitter:description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
 <meta name="robots" content="index,follow">
 <meta name="author" content="Technic Studio">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231e2024'/%3E%3Crect x='4' y='12' width='24' height='8' rx='4' fill='%23f2c11c'/%3E%3Ccircle cx='10' cy='16' r='2.4' fill='%231e2024'/%3E%3Ccircle cx='22' cy='16' r='2.4' fill='%231e2024'/%3E%3C/svg%3E">
@@ -26,7 +26,7 @@
  "operatingSystem":"任何具備現代瀏覽器的裝置",
  "inLanguage":"zh-Hant",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"TWD"},
- "description":"TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。支援直樑、L 樑、T 樑、十字樑與任意角度斜撐，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。"}
+ "description":"TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。"}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -359,9 +359,14 @@ body.show-intro #empty{display:flex!important}
 
 <div class="actionbar" id="actionbar">
   <div class="msg" id="actionmsg"></div>
-  <div class="btns">
+  <div class="btns" id="joinBtns">
     <button class="ink" id="join">接合</button>
     <button id="brace">架斜撐</button>
+  </div>
+  <div class="btns" id="holeBtns" style="display:none">
+    <button id="hmRound">圓孔</button>
+    <button id="hmCross">十字孔</button>
+    <button id="hmSolid">填實</button>
   </div>
 </div>
 
@@ -373,8 +378,9 @@ body.show-intro #empty{display:flex!important}
 
   <h3>能做什麼</h3>
   <ul>
-    <li><b>拼裝</b>　直樑、薄樑、L 樑、T 樑、十字樑、斜樑共 45 種，
-        滑鼠移到零件上就會浮出孔的軸線，點兩根軸即可接合。</li>
+    <li><b>只收正版有的零件</b>　直樑、薄樑、直角樑、T 樑、彎樑，
+        每一款都對應實際存在的樂高零件並標示官方編號，不會出現買不到的尺寸。</li>
+    <li><b>拼裝</b>　滑鼠移到零件上就會浮出孔的軸線，點兩根軸即可接合。</li>
     <li><b>任意角度斜撐</b>　選兩個孔，自動生出剛好跨越那段距離的樑。
         正版零件的孔距鎖死在 8 mm 整數倍，做不到任意角度；自己列印就沒有這個限制。</li>
     <li><b>真布林聯集</b>　匯出時把所有零件實際融成單一封閉模型，
@@ -430,50 +436,160 @@ function defFrom(bars,th,name,cat){
     const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
     const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
     b.xs.forEach(x=>{
+      if(b.noface&&b.noface.some(v=>Math.abs(v-x)<0.01))return;  // 此處是橫孔，不開直孔
+      if(b.pins&&b.pins.some(v=>Math.abs(v-x)<0.01))return;     // 此處是公頭，不開孔
       const px=x*c+ox, py=x*si+oy, k=px.toFixed(2)+','+py.toFixed(2);
       if(seen[k])return; seen[k]=1; holes.push([px,py]);
     });
   });
-  const sockets=[];
+  const sockets=[],keys=[];
   holes.forEach(h=>{
+    keys.push(h[0].toFixed(2)+','+h[1].toFixed(2));
     sockets.push({pos:[h[0],h[1], th/2],axis:[0,0, 1]});
     sockets.push({pos:[h[0],h[1],-th/2],axis:[0,0,-1]});
   });
-  return {kind:'beam',bars:bars,th:th,sockets:sockets,name:name,cat:cat,col:CAT_COL[cat]||0xf2c11c};
+  // 公頭插銷：從兩個扁平面各凸出一根，插進別的零件的孔
+  bars.forEach(b=>{
+    if(!b.pins)return;
+    const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    b.pins.forEach(px0=>{
+      const px=px0*c+ox, py=px0*si+oy;
+      keys.push('P'+px.toFixed(2)+','+py.toFixed(2));
+      sockets.push({pos:[px,py, th/2],axis:[0,0, 1],male:true});
+      sockets.push({pos:[px,py,-th/2],axis:[0,0,-1],male:true});
+    });
+  });
+  // 側向凸銷：從樑的側邊（寬度方向）水平伸出
+  bars.forEach(b=>{
+    if(!b.spins)return;
+    const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    b.spins.forEach(sp=>{
+      const lx=sp.x, ly=sp.s*R;
+      const px=lx*c-ly*si+ox, py=lx*si+ly*c+oy;
+      const axv=[-sp.s*si, sp.s*c, 0];
+      keys.push('Q'+px.toFixed(2)+','+py.toFixed(2));
+      sockets.push({pos:[px,py,0],axis:axv,male:true});
+      sockets.push({pos:[px,py,0],axis:axv,male:true});   // 佔位配對
+    });
+  });
+  // 側孔：孔軸沿樑的寬度方向（垂直於扁平面），兩個開口在 y = ±R
+  bars.forEach(b=>{
+    if(!b.side)return;
+    const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+    const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    b.side.forEach(sx=>{
+      [1,-1].forEach(sgn=>{
+        const lx=sx, ly=sgn*R;
+        const px=lx*c-ly*si+ox, py=lx*si+ly*c+oy;
+        const ax=-sgn*si, ay=sgn*c;
+        if(sgn>0)keys.push('S'+px.toFixed(2)+','+py.toFixed(2));
+        sockets.push({pos:[px,py,0],axis:[ax,ay,0]});
+      });
+    });
+  });
+  return {kind:'beam',bars:bars,th:th,sockets:sockets,holeKeys:keys,
+          name:name,cat:cat,col:CAT_COL[cat]||0xf2c11c};
 }
 const span=n=>{const L=(n-1)*MOD,a=[];for(let i=0;i<n;i++)a.push(i*MOD-L/2);return a;};
 const from0=n=>{const a=[];for(let i=0;i<n;i++)a.push(i*MOD);return a;};
 const DEG=d=>d*Math.PI/180;
 
-const CAT_COL={'直樑':0xf2c11c,'薄樑':0x9ba0a6,'L 樑':0xef7c1e,
-  'T 樑':0x4d5157,'十字樑':0xc4281c,'斜樑':0x2f7bbf};
+const CAT_COL={'直樑':0xf2c11c,'薄樑':0x9ba0a6,'直角樑':0xef7c1e,
+  'T 樑':0x4d5157,'彎樑':0xc4281c,'框架':0x2f7bbf,'軸孔樑':0x5b8f3e,
+  '凸銷樑':0x8d8f94};
 const DEFS={};
-const BEAMS=[2,3,4,5,6,7,8,9,10,11,12,13,15,16];
-const THINS=[3,5,7,9,11,13,15];
-const LS=[[3,3],[5,3],[7,3],[9,3],[5,5],[7,5],[9,5],[11,3]];
-const TS=[[5,3],[7,3],[7,4],[9,3]];
-const XS=[[5,5],[7,5],[7,7],[9,5]];
-const ANG=[[45,4,4],[45,5,3],[60,4,4],[60,5,5],[120,4,4],[135,4,4]];
+// ── 以下皆為正版實際存在的零件，括號為官方零件編號 ──
+// 厚直樑
+const BEAMS=[[2,'43857'],[3,'32523'],[4,''],[5,'32316'],[7,'32524'],
+             [9,'40490'],[11,'32525'],[13,'41239'],[15,'32278']];
+// 薄樑（半厚）
+const THINS=[[2,'41677'],[3,'6632'],[4,'32449'],[5,'32017'],[6,'32063'],[7,'32065']];
+// 直角樑 90°
+const L90=[[4,2,'32140'],[5,3,'32526']];
+// 薄的直角樑
+const L90T=[[3,3,'32056']];
+// T 樑
+const TEE=[[3,3,'60484']];
+// 彎樑：樂高只有一種角度，兩臂夾角 126.87°（官方名稱寫 53.13°，指的是偏離直線的角度）
+const BENT=[[4,4,'32348'],[6,4,'6629'],[7,3,'32271']];
+const BEND=126.87;
 
-BEAMS.forEach(n=>DEFS['beam'+n]=defFrom([{xs:span(n),rot:0}],TH,n+' 孔','直樑'));
-THINS.forEach(n=>DEFS['thin'+n]=defFrom([{xs:span(n),rot:0}],TH/2,'薄 '+n+' 孔','薄樑'));
-LS.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
-  [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,'L '+q[0]+'×'+q[1],'L 樑'));
-TS.forEach(q=>DEFS['T'+q[0]+'_'+q[1]]=defFrom(
-  [{xs:span(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,'T '+q[0]+'×'+q[1],'T 樑'));
-XS.forEach(q=>DEFS['X'+q[0]+'_'+q[1]]=defFrom(
-  [{xs:span(q[0]),rot:0},{xs:span(q[1]),rot:DEG(90)}],TH,'十 '+q[0]+'×'+q[1],'十字樑'));
-ANG.forEach(q=>DEFS['A'+q[0]+'_'+q[1]+'_'+q[2]]=defFrom(
-  [{xs:from0(q[1]),rot:0},{xs:from0(q[2]),rot:DEG(q[0])}],TH,
-  q[0]+'° '+q[1]+'×'+q[2],'斜樑'));
+const nm=(t,pn)=>pn?(t+' · '+pn):t;
+BEAMS.forEach(q=>DEFS['beam'+q[0]]=defFrom([{xs:span(q[0]),rot:0}],TH,
+  nm(q[0]+' 孔',q[1]),'直樑'));
+THINS.forEach(q=>DEFS['thin'+q[0]]=defFrom([{xs:span(q[0]),rot:0}],TH/2,
+  nm('薄 '+q[0]+' 孔',q[1]),'薄樑'));
+L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,
+  nm(q[0]+'×'+q[1]+' 直角',q[2]),'直角樑'));
+L90T.forEach(q=>DEFS['Lt'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH/2,
+  nm('薄 '+q[0]+'×'+q[1]+' 直角',q[2]),'直角樑'));
+TEE.forEach(q=>DEFS['T'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:span(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,
+  nm(q[0]+'×'+q[1]+' T 形',q[2]),'T 樑'));
+BENT.forEach(q=>DEFS['B'+q[0]+'_'+q[1]]=defFrom(
+  [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(BEND)}],TH,
+  nm(q[0]+'×'+q[1]+' 彎樑',q[2]),'彎樑'));
 
-const CATS=['直樑','薄樑','L 樑','T 樑','十字樑','斜樑'];
+// 框架（中央開口）
+// 前兩款是一般科技系列；後三款是 SPIKE Prime 導入的框架
+const FRAMES=[[7,5,'64179'],[11,5,'64178'],
+              [11,7,'39794'],[13,7,''],[15,11,'']];
+FRAMES.forEach(q=>{
+  const L=q[0],W=q[1];
+  // 依 LDraw 官方幾何：每一邊的孔是「一直一橫」交替，正中央為橫孔（側孔）。
+  // sideAt() 回傳該邊上屬於橫孔的位置；其餘為一般的直孔。
+  // 從角落起算：角落是直孔，緊鄰的下一個一定是橫孔，之後直橫交替。
+  // 兩端各自往內數，因此不論邊長奇偶，角落旁邊必定是橫孔。
+  const sideAt=n=>{
+    const out=[];
+    if(n<=5){                            // 5 格邊：角落以外全是橫孔
+      for(let i=1;i<n-1;i++) out.push(i*MOD);
+      return out;
+    }
+    for(let i=1;i<n-1;i++){
+      const d=Math.min(i,n-1-i);         // 到最近角落的距離
+      if(d%2===1) out.push(i*MOD);       // 距角落 1、3、5… 為橫孔
+    }
+    return out;
+  };
+  const sL=sideAt(L), sW=sideAt(W);
+  // 交替之後，直孔的位置要從面孔清單裡排除，否則同一點會有兩個孔
+  const faceAt=(n,sd)=>from0(n).filter(x=>!sd.some(v=>Math.abs(v-x)<0.01));
+  DEFS['F'+L+'_'+W]=defFrom([
+    {xs:from0(L),rot:0,off:[0,0],           side:sL, noface:sL},
+    {xs:from0(L),rot:0,off:[0,(W-1)*MOD],   side:sL, noface:sL},
+    {xs:from0(W),rot:DEG(90),off:[0,0],         side:sW, noface:sW},
+    {xs:from0(W),rot:DEG(90),off:[(L-1)*MOD,0], side:sW, noface:sW}
+  ],TH,nm(W+'×'+L+' 框架',q[2]),'框架');
+});
+// 兩端為十字軸孔的薄樑
+DEFS['ax5']=defFrom([{xs:span(5),rot:0,ax:[-16,16]}],TH/2,
+  nm('薄 5 孔 · 兩端軸孔','11478'),'軸孔樑');
+
+// 直 3 格 · 四凸銷（65489）：本體是橫置塊——三個孔全是橫向，
+// 四根凸銷從兩端的正反面凸出，與孔垂直
+DEFS['snap3']=defFrom([{xs:span(3),rot:0,
+  side:[-MOD,0,MOD],noface:[-MOD,0,MOD],pins:[-MOD,MOD]}],TH,
+  '直 3 格 · 四凸銷 · 65489','凸銷樑');
+// 直角 3×3 · 四凸銷（49130／55615）：一般 L 樑本體（孔皆為正面孔），
+// 四根凸銷從兩個外側邊緣水平伸出——各臂在轉角格與末端格各一根
+DEFS['snapL']=defFrom([
+  {xs:from0(3),rot:0,      spins:[{x:0,s:-1},{x:2*MOD,s:-1}]},
+  {xs:from0(3),rot:DEG(90),spins:[{x:0,s: 1},{x:2*MOD,s: 1}]}],TH,
+  '直角 3×3 · 四凸銷 · 49130','凸銷樑');
+
+const CATS=['直樑','薄樑','直角樑','T 樑','彎樑','框架','軸孔樑','凸銷樑'];
 const KEYS_BY_CAT={};
 CATS.forEach(c=>KEYS_BY_CAT[c]=Object.keys(DEFS).filter(k=>DEFS[k].cat===c));
 
 /* ── 零件縮圖：墨線圖鑑風 ── */
 function thumb(key){
-  const d=DEFS[key],S=0.72,pad=R+2;
+  const d=DEFS[key];
+  const S=0.72,pad=R+2,PIN_OD_T=4.7;
   let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
   const bars=d.bars.map(b=>{
     const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
@@ -491,8 +607,45 @@ function thumb(key){
       '" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>';
   let g='';
   bars.forEach(b=>{g+=seg(b,FILL,2*R);});
-  bars.forEach(b=>{b.holes.forEach(h=>{
-    g+='<circle cx="'+h[0]+'" cy="'+h[1]+'" r="'+(HOLE/2)+'" fill="#1e2024"/>';});});
+  bars.forEach((b,bi)=>{
+    const bar=d.bars[bi]||{};
+    const ax=bar.ax||[];
+    const nf=bar.noface||[], sd=bar.side||[];
+    const c=Math.cos(bar.rot||0),si=Math.sin(bar.rot||0);
+    // 側孔：畫成貫穿樑寬的細縫
+    sd.forEach(sx=>{
+      const px=sx*c+((bar.off&&bar.off[0])||0), py=sx*si+((bar.off&&bar.off[1])||0);
+      const dx=-si*R, dy=c*R;
+      g+='<line x1="'+(px-dx)+'" y1="'+(py-dy)+'" x2="'+(px+dx)+'" y2="'+(py+dy)+
+         '" stroke="#1e2024" stroke-width="'+(HOLE*0.5)+'"/>';
+    });
+    // 面凸銷：兩端外圈
+    (bar.pins||[]).forEach(pxx=>{
+      const px=pxx*c+((bar.off&&bar.off[0])||0), py=pxx*si+((bar.off&&bar.off[1])||0);
+      g+='<circle cx="'+px+'" cy="'+py+'" r="'+(PIN_OD_T/2)+
+         '" fill="none" stroke="#1e2024" stroke-width="1.1"/>';
+    });
+    // 側向凸銷：從側邊伸出的短棒
+    (bar.spins||[]).forEach(sp=>{
+      const lx=sp.x, ly=sp.s*R;
+      const px=lx*c-ly*si+((bar.off&&bar.off[0])||0);
+      const py=lx*si+ly*c+((bar.off&&bar.off[1])||0);
+      const ex=px+(-sp.s*si)*6, ey=py+(sp.s*c)*6;
+      g+='<line x1="'+px+'" y1="'+py+'" x2="'+ex+'" y2="'+ey+
+         '" stroke="'+FILL+'" stroke-width="'+PIN_OD_T+'" stroke-linecap="round"/>';
+    });
+    b.holes.forEach((h,hi)=>{
+      if(nf.some(v=>Math.abs(v-bar.xs[hi])<0.01))return;   // 此處無面孔
+      const isAx=ax.some(v=>Math.abs(v-bar.xs[hi])<0.01);
+      if(isAx){
+        const e=AXW/2,t=AXS/2;
+        g+='<path d="M'+(h[0]-e)+' '+(h[1]-t)+'h'+(e-t)+'v'+(-(e-t))+'h'+(2*t)+
+           'v'+(e-t)+'h'+(e-t)+'v'+(2*t)+'h'+(-(e-t))+'v'+(e-t)+'h'+(-2*t)+
+           'v'+(-(e-t))+'h'+(-(e-t))+'z" fill="#1e2024"/>';
+      } else {
+        g+='<circle cx="'+h[0]+'" cy="'+h[1]+'" r="'+(HOLE/2)+'" fill="#1e2024"/>';
+      }
+    });});
   return '<svg width="'+(vw*S).toFixed(1)+'" height="'+(vh*S).toFixed(1)+
     '" viewBox="'+vx+' '+vy+' '+vw+' '+vh+'">'+g+'</svg>';
 }
@@ -521,6 +674,16 @@ function ring(cx,r){
     P.push(new THREE.Vector2(cx+r*Math.cos(t), r*Math.sin(t)));}
   return P;
 }
+// 十字軸孔：across = 對邊全長，slot = 十字臂寬。同樣順時針
+const AXW=5.0, AXS=2.0;
+function cross(cx,across,slot){
+  const e=across/2, t=slot/2;
+  const ccw=[[e,t],[t,t],[t,e],[-t,e],[-t,t],[-e,t],
+             [-e,-t],[-t,-t],[-t,-e],[t,-e],[t,-t],[e,-t]];
+  const P=[];
+  for(let i=ccw.length-1;i>=0;i--)P.push(new THREE.Vector2(cx+ccw[i][0],ccw[i][1]));
+  return P;
+}
 function pushWall(T,pts,zb,zt){
   const n=pts.length;
   for(let i=0;i<n;i++){
@@ -541,14 +704,31 @@ function pushRing(T,inner,outer,z,up){
   }
 }
 // 每個孔的規格：hd 主孔徑、cd 沉孔徑、ch 沉孔深（0 表示直孔）
-function holeSpec(xs,hd,th){
+function holeKeyAt(b,x){
+  const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
+  const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+  return (x*c+ox).toFixed(2)+','+(x*si+oy).toFixed(2);
+}
+function holeSpec(xs,hd,th,ax,bar,modes){
   const ch=Math.min(cbDep(),th/2-0.3);
-  return xs.map(()=>({hd:hd,cd:cbDia(),ch:ch}));
+  const comp=hd-HOLE;
+  const AX=()=>({axle:true,aw:AXW+comp,as:AXS+comp,hd:hd,cd:0,ch:0});
+  return xs.map(x=>{
+    if(bar&&bar.noface&&bar.noface.some(v=>Math.abs(v-x)<0.01))
+      return {solid:true,hd:hd,cd:0,ch:0};   // 這個位置改成橫孔，直孔不挖
+    const m=(bar&&modes)?modes[holeKeyAt(bar,x)]:null;
+    if(m==='solid'||m==='pfill')return {solid:true,hd:hd,cd:0,ch:0};
+    if(m==='cross')return AX();
+    if(m==='round')return {hd:hd,cd:cbDia(),ch:ch};
+    const isAx=ax&&ax.some(v=>Math.abs(v-x)<0.01);
+    return isAx ? AX() : {hd:hd,cd:cbDia(),ch:ch};
+  });
 }
 function clampSpec(xs,spec){
   let minGap=1e9;
   for(let i=1;i<xs.length;i++)minGap=Math.min(minGap,Math.abs(xs[i]-xs[i-1]));
   spec.forEach(sp=>{
+    if(sp.axle){sp.ch=0;return;}
     if(sp.ch>0.05){
       sp.cd=Math.min(sp.cd, xs.length>1?minGap-0.8:1e9, 2*R-1.0);
       if(!(sp.cd>sp.hd+0.01))sp.ch=0;
@@ -560,7 +740,13 @@ function barSolidSpec(xs,spec,th){
   clampSpec(xs,spec);
   const zb=-th/2, zt=th/2;
   const contour=barContour(xs);
-  const holes=xs.map((x,k)=>ring(x, spec[k].ch>0 ? spec[k].cd/2 : spec[k].hd/2));
+  const idx=[],holes=[];
+  xs.forEach((x,k)=>{
+    if(spec[k].solid)return;              // 填實：這個孔不挖
+    idx.push(k);
+    holes.push(spec[k].axle ? cross(x,spec[k].aw,spec[k].as)
+                            : ring(x, spec[k].ch>0 ? spec[k].cd/2 : spec[k].hd/2));
+  });
   const faces=THREE.ShapeUtils.triangulateShape(contour,holes);
   let verts=contour.slice();
   holes.forEach(h=>{verts=verts.concat(h);});
@@ -571,8 +757,8 @@ function barSolidSpec(xs,spec,th){
     T.push(A.x,A.y,zb, C.x,C.y,zb, B.x,B.y,zb);   // 下蓋，反向
   });
   pushWall(T,contour,zb,zt);                       // 外壁
-  xs.forEach((x,k)=>{
-    const sp=spec[k],outer=holes[k];
+  idx.forEach((k,j)=>{
+    const x=xs[k],sp=spec[k],outer=holes[j];
     if(sp.ch>0){
       const inner=ring(x,sp.hd/2);
       pushWall(T,outer,zb,zb+sp.ch);               // 下沉孔
@@ -589,16 +775,79 @@ function barSolidSpec(xs,spec,th){
   g.computeVertexNormals();
   return g;
 }
-function barSolid(xs,hd,th){return barSolidSpec(xs,holeSpec(xs,hd,th),th);}
+function barSolid(xs,hd,th,ax,bar,modes){
+  return barSolidSpec(xs,holeSpec(xs,hd,th,ax,bar,modes),th);
+}
+// 把側孔真的挖穿。零件幾何是靜態的，所以只在建立網格時算一次
+function sideCut(geo,sides,r,th){
+  if(!MF||!sides||!sides.length)return geo;
+  try{
+    const cd=Math.min(cbDia(), th-1.2);           // 沉孔不能吃穿樑厚
+    const ch=Math.min(cbDep(), R-0.6);            // 沉孔深度不能超過半寬
+    const useCb=(ch>0.05&&cd>2*r+0.01);
+    let sol=toSolid(MF,trisOf(geo,new THREE.Matrix4()));
+    sides.forEach(sx=>{
+      // 主孔
+      let cut=MF.Manifold.cylinder(2*R+8,r,r,28,true)
+        .rotate([90,0,0]).translate([sx,0,0]);
+      if(useCb){
+        // 兩端各挖一圈沉孔，跟正面孔同樣的三段式剖面
+        [1,-1].forEach(sg=>{
+          const cb=MF.Manifold.cylinder(ch+0.01,cd/2,cd/2,28,true)
+            .rotate([90,0,0]).translate([sx,sg*(R-ch/2),0]);
+          const u=MF.Manifold.union(cut,cb);
+          cut.delete();cb.delete();cut=u;
+        });
+      }
+      const nx=MF.Manifold.difference(sol,cut);
+      sol.delete();cut.delete();sol=nx;
+    });
+    const tris=solidToTris(sol);sol.delete();
+    const pos=[];
+    tris.forEach(t=>t.forEach(v=>pos.push(v.x,v.y,v.z)));
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.computeVertexNormals();
+    return g;
+  }catch(e){ return geo; }
+}
+// 沿著 Z 的稜柱（給十字軸用）
+// 公頭插銷：從樑的兩個面各凸出一根，尺寸比孔略小
+const PIN_OD=4.72, PIN_LEN=7.8;
+function pinPieces(bar,th,comp){
+  const out=[], r=(PIN_OD-(comp||0))/2;
+  (bar.pins||[]).forEach(x=>{
+    [1,-1].forEach(sg=>{
+      const g=new THREE.CylinderGeometry(r,r,PIN_LEN,20);
+      g.rotateX(Math.PI/2);
+      g.translate(x,0,sg*(th/2+PIN_LEN/2));
+      out.push(g);
+    });
+  });
+  (bar.spins||[]).forEach(sp=>{
+    const g=new THREE.CylinderGeometry(r,r,PIN_LEN,20);   // 圓柱本來就沿 Y
+    g.translate(sp.x, sp.s*(R+PIN_LEN/2), 0);
+    out.push(g);
+  });
+  return out;
+}
 function partPieces(p,holeD,grow){
   const brace=(p.kind==='brace');
   const th=(brace?TH:(DEFS[p.defKey].th||TH))+(grow||0);
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
-  return bars.map(b=>{
-    const m=new THREE.Matrix4().makeRotationZ(b.rot||0);
-    m.setPosition((b.off&&b.off[0])||0,(b.off&&b.off[1])||0,0);
-    return {geo:barSolid(b.xs,holeD,th), mat:m};
+  const out=[];
+  const main=bars.map(b=>{
+    let g=barSolid(b.xs,holeD,th,b.ax,b,p.hmode);
+    if(b.side&&b.side.length)g=sideCut(g,b.side,holeD/2,th);
+    // 旋轉與位移直接寫進頂點，不經過物件層的矩陣分解
+    const rot=b.rot||0, ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    const place=gg=>{ if(rot)gg.rotateZ(rot); if(ox||oy)gg.translate(ox,oy,0); return gg; };
+    place(g);
+    pinPieces(b,th,holeD-HOLE).forEach(pg=>
+      out.push({geo:place(pg), mat:new THREE.Matrix4()}));
+    return {geo:g, mat:new THREE.Matrix4()};
   });
+  return main.concat(out);
 }
 
 /* ── 場景 ── */
@@ -645,7 +894,13 @@ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.data
 let parts=[],nextId=1,selPart=null,sel=[],spawnN=0,hoverKey=null,step=Math.PI/4;
 const used=new Set();
 const byId=id=>parts.find(p=>p.id===id);
-const socketsOf=p=>(p.kind==='brace')?[]:DEFS[p.defKey].sockets;
+// 斜撐的兩個孔各有正反兩面：貼在母件上的那面被佔用，另一面可以接東西
+function braceSockets(p){
+  const h=(p.span||16)/2;
+  return [{pos:[-h,0, TH/2],axis:[0,0, 1]},{pos:[-h,0,-TH/2],axis:[0,0,-1]},
+          {pos:[ h,0, TH/2],axis:[0,0, 1]},{pos:[ h,0,-TH/2],axis:[0,0,-1]}];
+}
+const socketsOf=p=>(p.kind==='brace')?braceSockets(p):DEFS[p.defKey].sockets;
 const nHoles=p=>socketsOf(p).length/2;
 function partOfObj(o){while(o&&!o.userData.pid)o=o.parent;return o?byId(o.userData.pid):null;}
 function rootOf(p){let o=p.obj;while(o.parent&&o.parent!==world)o=o.parent;return partOfObj(o);}
@@ -659,15 +914,25 @@ function jointOf(p){
 }
 function nameOf(p){return p.kind==='brace'?('斜撐 '+p.span.toFixed(1)+' mm'):DEFS[p.defKey].name;}
 // 一個孔有正反兩面，一根長插銷可以兩邊各接一支樑 → 兩面都佔滿才算滿
-const faceUsed=(p,i)=>used.has(p.id+':'+i);
+const faceUsed=(p,i)=>used.has(p.id+':'+i)||contactFaces.has(p.id+':'+i);
 const holeUsed=(p,h)=>faceUsed(p,2*h)&&faceUsed(p,2*h+1);
+function holeMode(p,h){
+  if(p.kind==='brace')return 'auto';
+  const d=DEFS[p.defKey]; if(!d||!d.holeKeys)return 'auto';
+  return (p.hmode&&p.hmode[d.holeKeys[h]])||'auto';
+}
+function setHoleMode(p,h,mode){
+  const d=DEFS[p.defKey]; if(!d||!d.holeKeys)return;
+  if(!p.hmode)p.hmode={};
+  p.hmode[d.holeKeys[h]]=mode;
+  buildMeshes(p);
+}
 const holeHalf=(p,h)=>faceUsed(p,2*h)||faceUsed(p,2*h+1);
 
 function buildMeshes(p){
   p.obj.children.filter(o=>o.isMesh).forEach(o=>p.obj.remove(o));
   partPieces(p,HOLE).forEach(pc=>{
-    const m=new THREE.Mesh(pc.geo,partMat(p));
-    m.applyMatrix4(pc.mat);p.obj.add(m);});
+    p.obj.add(new THREE.Mesh(pc.geo,partMat(p)));});
 }
 function socketWorld(p,idx){
   const s=socketsOf(p)[idx],q=p.obj.getWorldQuaternion(Q());
@@ -681,6 +946,10 @@ function holeWorld(p,h){
           plus:a,minus:b};
 }
 // 依「朝向哪一邊」挑貼合面
+function isMale(p,h){
+  const ss=socketsOf(p); const s=ss[2*h];
+  return !!(s&&s.male);
+}
 function faceToward(p,h,dir){
   const w=holeWorld(p,h);
   let a = w.axis.dot(dir)>=0 ? 2*h : 2*h+1;
@@ -694,6 +963,7 @@ function snapshot(){
   return JSON.stringify({nextId:nextId,spawnN:spawnN,parts:parts.map(p=>{
     const free=(p.obj.parent===world)&&!p.link;
     return {id:p.id,kind:p.kind,defKey:p.defKey,span:p.span||16,layer:p.layer||0,
+      hmode:p.hmode?JSON.parse(JSON.stringify(p.hmode)):null,
       link:p.link?{hostId:p.link.hostId,hostSocket:p.link.hostSocket,
                    viaId:p.link.viaId,viaSocket:p.link.viaSocket,roll:p.link.roll}:null,
       aRef:p.aRef||null,bRef:p.bRef||null,
@@ -707,7 +977,8 @@ function restore(json){
   parts=[];used.clear();
   s.parts.forEach(d=>{
     const p={id:d.id,kind:d.kind,defKey:d.defKey,obj:new THREE.Group(),link:null,
-             span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0};
+             span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0,
+             hmode:d.hmode||null};
     p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
     if(d.pos)p.obj.position.fromArray(d.pos);
     if(d.rot)p.obj.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
@@ -718,7 +989,8 @@ function restore(json){
     if(p.link){used.add(p.link.hostId+':'+p.link.hostSocket);
                used.add(p.link.viaId+':'+p.link.viaSocket);}
     if(p.kind==='brace'){used.add(p.aRef.partId+':'+p.aRef.idx);
-                         used.add(p.bRef.partId+':'+p.bRef.idx);}});
+                         used.add(p.bRef.partId+':'+p.bRef.idx);
+                         used.add(p.id+':1');used.add(p.id+':3');}});
   nextId=s.nextId;spawnN=s.spawnN;selPart=null;sel=[];
   layout();refresh();
 }
@@ -829,6 +1101,7 @@ function addBrace(){
            span:16,link:null,aRef:rf[0],bRef:rf[1],layer:0};
   p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
   used.add(rf[0].partId+':'+rf[0].idx);used.add(rf[1].partId+':'+rf[1].idx);
+  used.add(p.id+':1');used.add(p.id+':3');   // 斜撐貼在母件上的那兩面
   parts.push(p);selPart=p.id;sel=[];layout();refresh();
 }
 
@@ -875,6 +1148,8 @@ const hitGeo=new THREE.CylinderGeometry(2.7,2.7,TH+4.4,8);hitGeo.rotateX(Math.PI
 const M_AX=new THREE.MeshBasicMaterial({color:0xa9adb5,transparent:true,opacity:.55});
 const M_AX_HI=new THREE.MeshBasicMaterial({color:0xffffff});
 const M_AX_ON=new THREE.MeshBasicMaterial({color:0x4a80d9});
+const M_AX_SOLID=new THREE.MeshBasicMaterial({color:0x6f7681,transparent:true,opacity:.35});
+const M_AX_MALE=new THREE.MeshBasicMaterial({color:0xe0a13c,transparent:true,opacity:.75});
 const M_HIT=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
 let mlist=[],hoverPartId=null;
 // 只有「游標停在上面」或「已被選取」的零件才顯示孔軸，避免整個畫面都是線
@@ -885,6 +1160,51 @@ function visibleParts(){
   sel.forEach(x=>v.add(x.partId));
   return v;
 }
+/* ── 銷與孔的貼合掃描 ─────────────────────────────
+   任何公銷的基準面貼合某個孔的開口（位置重合、方向相對），
+   該孔即視為被銷佔據 → 幾何填實、不可再接。銷移開自動恢復。 */
+let pinBusy=new Set(), contactFaces=new Set();
+function syncPinFills(){
+  pinBusy=new Set();contactFaces=new Set();
+  const want=new Set(), soc=[];
+  parts.forEach(p=>{
+    if(!p.obj.visible)return;
+    const ss=socketsOf(p);
+    for(let i=0;i<ss.length;i++)
+      soc.push({id:p.id,i:i,male:!!ss[i].male,w:socketWorld(p,i)});
+  });
+  for(let a=0;a<soc.length;a++)for(let b=a+1;b<soc.length;b++){
+    const A=soc[a],B=soc[b];
+    if(A.id===B.id)continue;
+    if(A.w.pos.distanceToSquared(B.w.pos)>0.36)continue;   // 位置要重合
+    if(A.w.axis.dot(B.w.axis)>-0.985)continue;             // 方向要相對
+    if(A.male&&!B.male){want.add(B.id+'#'+(B.i>>1));pinBusy.add(A.id+'#'+(A.i>>1));}
+    else if(B.male&&!A.male){want.add(A.id+'#'+(A.i>>1));pinBusy.add(B.id+'#'+(B.i>>1));}
+    else if(!A.male&&!B.male){                              // 孔對孔貼合：內側面互相咬合
+      contactFaces.add(A.id+':'+A.i);contactFaces.add(B.id+':'+B.i);
+    }
+  }
+  parts.forEach(q=>{
+    if(q.kind==='brace')return;
+    const d=DEFS[q.defKey]; if(!d||!d.holeKeys)return;
+    for(let h=0;h<d.holeKeys.length;h++){
+      const key=q.id+'#'+h, m=holeMode(q,h);
+      if(want.has(key)){
+        if(m!=='pfill'&&m!=='solid'){
+          if(!q.hmode)q.hmode={};
+          q._pf=q._pf||{}; q._pf[h]=m;
+          q.hmode[d.holeKeys[h]]='pfill';
+          buildMeshes(q);
+        }
+      } else if(m==='pfill'){
+        const prev=(q._pf&&q._pf[h])||'auto';
+        if(prev==='auto'||prev==='pfill')delete q.hmode[d.holeKeys[h]];
+        else q.hmode[d.holeKeys[h]]=prev;
+        buildMeshes(q);
+      }
+    }
+  });
+}
 function rebuildMarkers(){
   while(markers.children.length)markers.remove(markers.children[0]);
   mlist=[];let free=0;
@@ -894,18 +1214,33 @@ function rebuildMarkers(){
     const show=vis.has(p.id);
     for(let h=0;h<nHoles(p);h++){
       if(holeUsed(p,h))continue;
-      free++;
+      if(holeMode(p,h)==='pfill')continue;      // 被銷佔據
+      if(pinBusy.has(p.id+'#'+h))continue;      // 已插進孔裡的銷
+      const isSolid=holeMode(p,h)==='solid';
+      if(!isSolid)free++;                    // 填實的孔不計入可用接點
       if(!show)continue;
       const w=holeWorld(p,h),k=p.id+'#'+h;
+      const male=isMale(p,h);
       const q=Q().setFromUnitVectors(V3(0,0,1),w.axis);
       const shaft=new THREE.Mesh(axGeo,M_AX);
       shaft.position.copy(w.pos);shaft.quaternion.copy(q);
-      if(holeHalf(p,h))shaft.scale.set(0.55,0.55,1);   // 只剩一面可用
+      // 公頭的標記要凸出銷尖之外才看得到（孔的標記藏在洞裡即可）
+      let base=[1,1,1];
+      if(male)base=[1.3,1.3,2.5];
+      if(holeHalf(p,h))base=[base[0]*0.55,base[1]*0.55,base[2]];
       const hit=new THREE.Mesh(hitGeo,M_HIT);
       hit.position.copy(w.pos);hit.quaternion.copy(q);
       hit.userData.hole={partId:p.id,hole:h};
       markers.add(shaft);markers.add(hit);
-      mlist.push({key:k,ms:[shaft]});
+      if(male){                                    // 銷尖外側再放判定球，點銷尖即可選取
+        [1,-1].forEach(sg=>{
+          const h2=new THREE.Mesh(hitGeo,M_HIT);
+          h2.position.copy(w.pos).addScaledVector(w.axis,sg*11);
+          h2.userData.hole={partId:p.id,hole:h};
+          markers.add(h2);
+        });
+      }
+      mlist.push({key:k,ms:[shaft],solid:isSolid,male:male,base:base});
     }});
   paintMarkers();
   return free;
@@ -914,9 +1249,11 @@ function paintMarkers(){
   mlist.forEach(m=>{
     const on=sel.some(x=>(x.partId+'#'+x.hole)===m.key);
     const hv=hoverKey===m.key;
-    const mat=on?M_AX_ON:(hv?M_AX_HI:M_AX);
+    const mat=on?M_AX_ON:(hv?M_AX_HI:(m.solid?M_AX_SOLID:(m.male?M_AX_MALE:M_AX)));
+    const k=m.solid&&!on&&!hv?0.6:1;
+    const b=m.base||[1,1,1];
     m.ms.forEach(o=>{o.material=mat;
-      o.scale.set(on||hv?2.1:1,on||hv?2.1:1,on?1.12:1);});
+      o.scale.set((on||hv?2.1:1)*k*b[0],(on||hv?2.1:1)*k*b[1],(on?1.12:1)*b[2]);});
   });
 }
 
@@ -1208,7 +1545,7 @@ if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 
 /* ── 零件庫：類別 → 零件 ── */
 let curCat=CATS[0];
-const SHORT={'直樑':'直','薄樑':'薄','L 樑':'L','T 樑':'T','十字樑':'十','斜樑':'斜'};
+const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':'彎','框架':'框','軸孔樑':'軸','凸銷樑':'銷'};
 function buildCats(){
   const c=el('popCats');c.innerHTML='';
   CATS.forEach(cat=>{
@@ -1305,6 +1642,7 @@ function placeSelPanel(){
 }
 
 function refresh(){
+  syncPinFills();
   parts.forEach(p=>{
     const on=p.id===selPart;
     p.obj.children.forEach(o=>{if(o.isMesh)
@@ -1334,6 +1672,9 @@ function refresh(){
   if(sel.length===2){
     bar.style.display='flex';
     const pA=byId(sel[0].partId),pB=byId(sel[1].partId);
+    const anySolid=holeMode(pA,sel[0].hole)==='solid'||holeMode(pB,sel[1].hole)==='solid';
+    const mA=isMale(pA,sel[0].hole), mB=isMale(pB,sel[1].hole);
+
     const same=rootOf(pA).id===rootOf(pB).id;
     const rf=braceRefs(),s=braceSolve(rf[0],rf[1]);
     let txt='';
@@ -1343,13 +1684,26 @@ function refresh(){
       if(s.off>0.1)txt+='<br><span class="w">兩孔不同平面，差 '+s.off.toFixed(1)+' mm</span>';
       if(s.par<0.99)txt+='<br><span class="w">兩孔軸向不平行</span>';
       if(same)txt+='<br>同一組件，只能架斜撐';}
+    if(anySolid)txt='<span class="w">選到的孔已填實，不能接合。先改回圓孔或十字孔。</span>';
+
     msg.innerHTML=txt;
-    el('join').disabled=same;el('brace').disabled=false;
+    el('join').disabled=same||anySolid;
+    el('brace').disabled=anySolid||mA||mB;   // 斜撐要靠孔定位，凸銷不行
   } else if(sel.length===1){
     bar.style.display='flex';
-    msg.innerHTML='已選 1 根軸　再點第二根';
-    el('join').disabled=true;el('brace').disabled=true;
+    const sp=byId(sel[0].partId);
+    const md=sp?holeMode(sp,sel[0].hole):'auto';
+    const nameOfMode={'cross':'十字孔','solid':'填實','round':'圓孔','auto':'預設'};
+    msg.innerHTML='已選 1 根軸　再點第二根接合<br>或改變這個孔的型式（目前：'+
+      nameOfMode[md]+'）';
+    el('joinBtns').style.display='none';
+    el('holeBtns').style.display=(sp&&sp.kind!=='brace')?'flex':'none';
+    ['hmRound','hmCross','hmSolid'].forEach(b=>el(b).classList.remove('on'));
+    if(md==='cross')el('hmCross').classList.add('on');
+    else if(md==='solid')el('hmSolid').classList.add('on');
+    else if(md==='round')el('hmRound').classList.add('on');
   } else bar.style.display='none';
+  if(sel.length!==1){el('joinBtns').style.display='flex';el('holeBtns').style.display='none';}
 
   el('expFused').disabled=!parts.length;
   el('expParts').disabled=!parts.length;
@@ -1385,6 +1739,17 @@ document.querySelectorAll('#stepSeg button').forEach(b=>b.onclick=()=>{
   b.classList.add('on');
   const d=parseFloat(b.dataset.step);
   step=d>0?d*Math.PI/180:0;});
+function applyHoleMode(mode){
+  if(sel.length!==1)return;
+  const p=byId(sel[0].partId); if(!p||p.kind==='brace')return;
+  if(isMale(p,sel[0].hole)){toast('這是凸銷，不能改成孔。',true);return;}
+  pushHistory();
+  setHoleMode(p,sel[0].hole,mode);
+  layout();refresh();
+}
+el('hmRound').onclick=()=>applyHoleMode('round');
+el('hmCross').onclick=()=>applyHoleMode('cross');
+el('hmSolid').onclick=()=>applyHoleMode('solid');
 el('join').onclick=doJoin;
 el('brace').onclick=addBrace;
 el('detach').onclick=()=>{const t=rotTarget();if(t)detach(t.part);};
@@ -1630,6 +1995,12 @@ el('expParts').onclick=()=>{
     },i*350);});};
 
 resize();setView('iso');refresh();
+// 側孔需要布林運算，先在背景把模組載起來
+loadManifold().then(()=>{
+  parts.forEach(buildMeshes);layout();refresh();
+}).catch(()=>{
+  toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
+});
 (function loop(){requestAnimationFrame(loop);updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
 })();
