@@ -552,6 +552,31 @@ THINS.forEach(q=>DEFS['thin'+q[0]]=defFrom([{xs:span(q[0]),rot:0}],TH/2,
 L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
   [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,
   nm(q[0]+'×'+q[1]+' 直角',q[2]),'直角樑'));
+// 8×8 彎樑（126.87°）＋吊在轉角下方的 3 孔橫樑。
+// 參數由淨空搜尋決定：橫樑吊出 21mm、兩端各外伸 4mm（外伸段不開孔，
+// 供細撐接著），細撐半寬 0.9mm、落在兩臂距轉角 20mm 的非孔位置。
+// 如此 18 個孔的孔緣都留有 ≥0.5mm 淨空，且每個孔都能插滿樂高插銷。
+(function(){
+  const N=8, BL=2*MOD, T=21, EXT=4, J=20, W=0.9;
+  const th=DEG(BEND), half=th/2;
+  const bx=Math.cos(half), by=Math.sin(half);
+  const dx=Math.sin(half), dy=-Math.cos(half);
+  const h0=[T*bx-(BL/2)*dx, T*by-(BL/2)*dy];      // 橫樑第一個孔
+  const at=t=>[h0[0]+t*dx, h0[1]+t*dy];
+  const tipA=at(BL+EXT), tipB=at(-EXT);
+  const sideIdx=[(N-1)*MOD, MOD];                 // 外端數來第 1、7 個孔
+  const strut=(P,Q)=>{const L=Math.hypot(Q[0]-P[0],Q[1]-P[1]);
+    return {xs:[0,L],rot:Math.atan2(Q[1]-P[1],Q[0]-P[0]),off:[P[0],P[1]],
+            rw:W,noface:[0,L]};};
+  DEFS['B8_8b']=defFrom([
+    {xs:from0(N),rot:0,  side:sideIdx,noface:sideIdx},
+    {xs:from0(N),rot:th, side:sideIdx,noface:sideIdx},
+    {xs:[-EXT,0,MOD,BL,BL+EXT],rot:Math.atan2(dy,dx),off:h0,
+     noface:[-EXT,BL+EXT]},                        // 橫樑：3 孔＋兩端外伸段
+    strut(tipA,[J,0]),
+    strut(tipB,[J*Math.cos(th),J*Math.sin(th)])
+  ],TH,'8×8 彎樑 · 轉角橫樑 · 自製','彎樑');
+})();
 L90T.forEach(q=>DEFS['Lt'+q[0]+'_'+q[1]]=defFrom(
   [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH/2,
   nm('薄 '+q[0]+'×'+q[1]+' 直角',q[2]),'直角樑'));
@@ -623,7 +648,7 @@ function thumb(key){
     const c=Math.cos(b.rot||0),si=Math.sin(b.rot||0);
     const ox=(b.off&&b.off[0])||0,oy=(b.off&&b.off[1])||0;
     const a=Math.min.apply(null,b.xs),z=Math.max.apply(null,b.xs);
-    const q={x1:a*c+ox,y1:a*si+oy,x2:z*c+ox,y2:z*si+oy,
+    const q={rw:b.rw,x1:a*c+ox,y1:a*si+oy,x2:z*c+ox,y2:z*si+oy,
              holes:b.xs.map(x=>[x*c+ox,x*si+oy])};
     [[q.x1,q.y1],[q.x2,q.y2]].forEach(w=>{
       x0=Math.min(x0,w[0]);x1=Math.max(x1,w[0]);
@@ -634,7 +659,7 @@ function thumb(key){
   const seg=(b,col,w)=>'<line x1="'+b.x1+'" y1="'+b.y1+'" x2="'+b.x2+'" y2="'+b.y2+
       '" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>';
   let g='';
-  bars.forEach(b=>{g+=seg(b,FILL,2*R);});
+  bars.forEach(b=>{g+=seg(b,FILL,2*(b.rw||R));});
   bars.forEach((b,bi)=>{
     const bar=d.bars[bi]||{};
     const ax=bar.ax||[];
@@ -687,12 +712,13 @@ function cbDep(){const v=parseFloat((el('cbh')||{}).value);return isNaN(v)?0.80:
 
 const CSEG=28, HSEG=24;
 // 膠囊外框，逆時針
-function barContour(xs){
+function barContour(xs,rw){
+  const RW=(rw===undefined||rw===null)?R:rw;
   const a=Math.min.apply(null,xs), b=Math.max.apply(null,xs), P=[];
   for(let i=0;i<=CSEG;i++){const t=-Math.PI/2+i/CSEG*Math.PI;
-    P.push(new THREE.Vector2(b+R*Math.cos(t), R*Math.sin(t)));}
+    P.push(new THREE.Vector2(b+RW*Math.cos(t), RW*Math.sin(t)));}
   for(let i=0;i<=CSEG;i++){const t=Math.PI/2+i/CSEG*Math.PI;
-    P.push(new THREE.Vector2(a+R*Math.cos(t), R*Math.sin(t)));}
+    P.push(new THREE.Vector2(a+RW*Math.cos(t), RW*Math.sin(t)));}
   return P;
 }
 // 孔環，順時針（孔的內壁法線要朝軸心）
@@ -752,22 +778,25 @@ function holeSpec(xs,hd,th,ax,bar,modes){
     return isAx ? AX() : {hd:hd,cd:cbDia(),ch:ch};
   });
 }
-function clampSpec(xs,spec){
+function clampSpec(xs,spec,RWC){
+  // 只有「真的有孔」的位置才參與最小間距計算；
+  // 填實與外伸段不是孔，不該把沉孔壓小（曾造成沉孔整根消失）
+  const hx=xs.filter((x,i)=>!spec[i].solid).sort((a,b)=>a-b);
   let minGap=1e9;
-  for(let i=1;i<xs.length;i++)minGap=Math.min(minGap,Math.abs(xs[i]-xs[i-1]));
+  for(let i=1;i<hx.length;i++)minGap=Math.min(minGap,Math.abs(hx[i]-hx[i-1]));
   spec.forEach(sp=>{
     if(sp.axle){sp.ch=0;return;}
     if(sp.ch>0.05){
-      sp.cd=Math.min(sp.cd, xs.length>1?minGap-0.8:1e9, 2*R-1.0);
+      sp.cd=Math.min(sp.cd, hx.length>1?minGap-0.8:1e9, 2*(RWC||R)-1.0);
       if(!(sp.cd>sp.hd+0.01))sp.ch=0;
     } else sp.ch=0;
   });
   return spec;
 }
-function barSolidSpec(xs,spec,th){
-  clampSpec(xs,spec);
+function barSolidSpec(xs,spec,th,rw){
+  clampSpec(xs,spec,rw);
   const zb=-th/2, zt=th/2;
-  const contour=barContour(xs);
+  const contour=barContour(xs,rw);
   const idx=[],holes=[];
   xs.forEach((x,k)=>{
     if(spec[k].solid)return;              // 填實：這個孔不挖
@@ -803,8 +832,8 @@ function barSolidSpec(xs,spec,th){
   g.computeVertexNormals();
   return g;
 }
-function barSolid(xs,hd,th,ax,bar,modes){
-  return barSolidSpec(xs,holeSpec(xs,hd,th,ax,bar,modes),th);
+function barSolid(xs,hd,th,ax,bar,modes,rw){
+  return barSolidSpec(xs,holeSpec(xs,hd,th,ax,bar,modes),th,rw);
 }
 // 把側孔真的挖穿。零件幾何是靜態的，所以只在建立網格時算一次
 function sideCut(geo,sides,r,th){
@@ -865,7 +894,7 @@ function partPieces(p,holeD,grow){
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const out=[];
   const main=bars.map(b=>{
-    let g=barSolid(b.xs,holeD,th,b.ax,b,p.hmode);
+    let g=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
     if(b.side&&b.side.length)g=sideCut(g,b.side,holeD/2,th);
     // 旋轉與位移直接寫進頂點，不經過物件層的矩陣分解
     const rot=b.rot||0, ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
