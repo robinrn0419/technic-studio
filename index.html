@@ -564,13 +564,20 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
   const h0=[T*bx-(BL/2)*dx, T*by-(BL/2)*dy];      // 橫樑第一個孔
   const at=t=>[h0[0]+t*dx, h0[1]+t*dy];
   const tipA=at(BL+EXT), tipB=at(-EXT);
-  const sideIdx=[(N-1)*MOD, MOD];                 // 外端數來第 1、7 個孔
+  // 超音波感測器：兩臂各一顆，孔距 48mm（6 格），以橫孔固定。
+  // 為了讓兩顆本體靠近，整組往轉角內移到 SD=5.5mm（脫離 8mm 格點）。
+  // 連帶必須刪掉轉角孔（兩臂共用、且已無用）與 x=48 的正面孔
+  // （否則與內移後的側孔只剩 0.45mm 材料）。
+  const SD=5.5;
+  const sideIdx=[SD, SD+6*MOD];                   // 側孔：x=5.5 與 53.5
+  const armXs=[0,SD,2*MOD,3*MOD,4*MOD,5*MOD,6*MOD,SD+6*MOD,(N-1)*MOD];
+  const armSolid=[0,6*MOD,(N-1)*MOD].concat(sideIdx);   // 填實：轉角、x=48、臂端
   const strut=(P,Q)=>{const L=Math.hypot(Q[0]-P[0],Q[1]-P[1]);
     return {xs:[0,L],rot:Math.atan2(Q[1]-P[1],Q[0]-P[0]),off:[P[0],P[1]],
             rw:W,noface:[0,L]};};
   DEFS['B8_8b']=defFrom([
-    {xs:from0(N),rot:0,  side:sideIdx,noface:sideIdx},
-    {xs:from0(N),rot:th, side:sideIdx,noface:sideIdx},
+    {xs:armXs,rot:0,  side:sideIdx,noface:armSolid},
+    {xs:armXs,rot:th, side:sideIdx,noface:armSolid},
     {xs:[-EXT,0,MOD,BL,BL+EXT],rot:Math.atan2(dy,dx),off:h0,
      noface:[-EXT,BL+EXT]},                        // 橫樑：3 孔＋兩端外伸段
     strut(tipA,[J,0]),
