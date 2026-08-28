@@ -843,24 +843,28 @@ function barSolid(xs,hd,th,ax,bar,modes,rw){
   return barSolidSpec(xs,holeSpec(xs,hd,th,ax,bar,modes),th,rw);
 }
 // 把側孔真的挖穿。零件幾何是靜態的，所以只在建立網格時算一次
-function sideCut(geo,sides,r,th){
-  if(!MF||!sides||!sides.length)return geo;
+// 側孔（橫孔）挖除。
+// cuts 是「零件座標系」的清單，因此一個孔會挖穿零件裡所有的樑，
+// 而不是只挖它自己那根 —— 轉角處兩臂互相重疊時這點是必要的。
+function sideCut(geo,cuts,r,th,rot,off){
+  if(!MF||!cuts||!cuts.length)return geo;
   try{
-    const cd=Math.min(cbDia(), th-1.2);           // 沉孔不能吃穿樑厚
-    const ch=Math.min(cbDep(), R-0.6);            // 沉孔深度不能超過半寬
-    const useCb=(ch>0.05&&cd>2*r+0.01);
+    const ct=Math.cos(-rot), st=Math.sin(-rot);
+    const oxb=(off&&off[0])||0, oyb=(off&&off[1])||0;
+    const toLocal=(x,y)=>{const dx=x-oxb, dy=y-oyb;
+      return [dx*ct-dy*st, dx*st+dy*ct];};
     let sol=toSolid(MF,trisOf(geo,new THREE.Matrix4()));
-    sides.forEach(sx=>{
-      // 主孔
+    cuts.forEach(c=>{
+      const deg=(c.ang-rot)*180/Math.PI;
+      const P=toLocal(c.x,c.y);
       let cut=MF.Manifold.cylinder(2*R+8,r,r,28,true)
-        .rotate([90,0,0]).translate([sx,0,0]);
-      if(useCb){
-        // 兩端各挖一圈沉孔，跟正面孔同樣的三段式剖面
-        [1,-1].forEach(sg=>{
-          const cb=MF.Manifold.cylinder(ch+0.01,cd/2,cd/2,28,true)
-            .rotate([90,0,0]).translate([sx,sg*(R-ch/2),0]);
-          const u=MF.Manifold.union(cut,cb);
-          cut.delete();cb.delete();cut=u;
+        .rotate([90,0,0]).rotate([0,0,deg]).translate([P[0],P[1],0]);
+      if(c.cb){
+        c.cb.forEach(q=>{
+          const Q=toLocal(q[0],q[1]);
+          const cb=MF.Manifold.cylinder(c.ch+0.01,c.cd/2,c.cd/2,28,true)
+            .rotate([90,0,0]).rotate([0,0,deg]).translate([Q[0],Q[1],0]);
+          const u=MF.Manifold.union(cut,cb);cut.delete();cb.delete();cut=u;
         });
       }
       const nx=MF.Manifold.difference(sol,cut);
@@ -873,9 +877,29 @@ function sideCut(geo,sides,r,th){
     g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
     g.computeVertexNormals();
     return g;
-  }catch(e){ return geo; }
+  }catch(e){console.warn('sideCut 失敗',e);return geo;}
 }
-// 沿著 Z 的稜柱（給十字軸用）
+// 把每根樑的 side 清單換算成零件座標系的挖除描述
+function sideCutList(bars,th,holeD){
+  const out=[];
+  bars.forEach(b=>{
+    if(!b.side||!b.side.length)return;
+    const rw=b.rw||R;
+    const cd=Math.min(cbDia(), th-1.2);
+    const ch=Math.min(cbDep(), rw-0.6);
+    const useCb=(ch>0.05 && cd>holeD+0.01);   // 沉孔必須比主孔大才有意義
+    const ro=b.rot||0, c=Math.cos(ro), sn=Math.sin(ro);
+    const ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
+    const toPart=(x,y)=>[ox+x*c-y*sn, oy+x*sn+y*c];
+    b.side.forEach(sx=>{
+      const P=toPart(sx,0);
+      const o={x:P[0],y:P[1],ang:ro,cd:cd,ch:ch};
+      if(useCb)o.cb=[toPart(sx,rw-ch/2), toPart(sx,-(rw-ch/2))];
+      out.push(o);
+    });
+  });
+  return out;
+}
 // 公頭插銷：從樑的兩個面各凸出一根，尺寸比孔略小
 const PIN_OD=4.72, PIN_LEN=7.8;
 function pinPieces(bar,th,comp){
@@ -888,11 +912,6 @@ function pinPieces(bar,th,comp){
       out.push(g);
     });
   });
-  (bar.spins||[]).forEach(sp=>{
-    const g=new THREE.CylinderGeometry(r,r,PIN_LEN,20);   // 圓柱本來就沿 Y
-    g.translate(sp.x, sp.s*(R+PIN_LEN/2), 0);
-    out.push(g);
-  });
   return out;
 }
 function partPieces(p,holeD,grow){
@@ -900,9 +919,10 @@ function partPieces(p,holeD,grow){
   const th=(brace?TH:(DEFS[p.defKey].th||TH))+(grow||0);
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const out=[];
+  const cuts=sideCutList(bars,th,holeD);
   const main=bars.map(b=>{
     let g=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    if(b.side&&b.side.length)g=sideCut(g,b.side,holeD/2,th);
+    if(cuts.length)g=sideCut(g,cuts,holeD/2,th,b.rot||0,b.off);
     // 旋轉與位移直接寫進頂點，不經過物件層的矩陣分解
     const rot=b.rot||0, ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
     const place=gg=>{ if(rot)gg.rotateZ(rot); if(ox||oy)gg.translate(ox,oy,0); return gg; };
