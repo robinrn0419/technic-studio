@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 讓瀏覽器每次都回頭問一次，避免書籤停在舊版本 -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>TrunnionLab 科技零件工作台 — Technic 相容零件線上拼裝與 3D 列印輸出</title>
 <meta name="description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
 <link rel="canonical" href="https://robinrn0419.github.io/technic-studio/">
@@ -316,6 +319,8 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
 .dlAct button:hover{color:var(--text)}
 
 #homeFoot{display:flex;gap:6px;padding-top:26px}
+#build{margin:26px 0 0;font-family:var(--mono);font-size:9px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){
   .dlRow,.dlIx,.dlAct{transition:none}
 }
@@ -580,6 +585,7 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
     <h2>我的專案</h2><div class="sp"></div><span id="homeCount"></span>
   </div>
   <div id="dlList"></div>
+  <p id="build"></p>
   <div id="homeFoot">
     <button class="ink" id="dlNew">新專案</button>
     <button class="quiet" id="dlImport">匯入 JSON</button>
@@ -2587,6 +2593,11 @@ function setAuthState(user){
   }
 }
 el('btnAuth').onclick=()=>toast('帳號系統還沒接上，專案目前存在這台裝置。');
+
+/* 版本印記：用來確認打開的是不是最新版 */
+const BUILD='2026.09.06';
+el('build').textContent='版本 '+BUILD;
+console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
 
 /* ── 給作者建議 ── */
