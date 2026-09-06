@@ -2769,20 +2769,42 @@ let docId=null, saveTimer=null;
 /* 目前這一格畫面截成縮圖：明確 render 一次再抓，免得 WebGL
    的繪圖緩衝已被清空。只在工作台、且場景有零件時才截。 */
 function viewThumb(){
+  if(atHome||!parts.length||typeof renderer==='undefined')return undefined;
+  let box;
+  try{ box=new THREE.Box3().setFromObject(world); }catch(e){ return undefined; }
+  if(box.isEmpty())return undefined;
+  const ctr=box.getCenter(V3()), r=Math.max(box.getSize(V3()).length()/2,4);
+  const RW=512, RH=320, asp=RW/RH, W=256, H=160;
+  let url;
   try{
-    if(atHome||!parts.length||typeof renderer==='undefined')return undefined;
+    // 依縮圖比例算出剛好框住整個模型的距離（垂直、水平取較窄者當限制），留一點邊界。
+    // 視角沿用使用者目前的方位，只把遠近正規化，讓大件小件的縮圖都置中又飽滿。
+    const vHalf=camera.fov*Math.PI/360;
+    const hHalf=Math.atan(Math.tan(vHalf)*asp);
+    const dist=r/Math.sin(Math.min(vHalf,hHalf))*1.15;
+    const sp=Math.sin(cam.phi), cp=Math.cos(cam.phi);
+    camera.position.set(ctr.x+dist*sp*Math.cos(cam.theta),
+                        ctr.y+dist*sp*Math.sin(cam.theta),
+                        ctr.z+dist*cp);
+    camera.up.set(0,0,1); camera.lookAt(ctr);
+    camera.aspect=asp; camera.updateProjectionMatrix();
+    renderer.setPixelRatio(1); renderer.setSize(RW,RH,false);
     renderer.render(scene,camera);
-    const src=renderer.domElement, W=256, H=160;
+
+    const src=renderer.domElement;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
     ctx.fillStyle=(getComputedStyle(document.body).getPropertyValue('--view')||'#2b2d33').trim();
     ctx.fillRect(0,0,W,H);
-    const sr=src.width/src.height, dr=W/H; let sw,sh,sx,sy;
-    if(sr>dr){ sh=src.height; sw=sh*dr; sx=(src.width-sw)/2; sy=0; }
-    else     { sw=src.width;  sh=sw/dr; sx=0; sy=(src.height-sh)/2; }
-    ctx.drawImage(src,sx,sy,sw,sh,0,0,W,H);
-    return c.toDataURL('image/jpeg',0.62);
-  }catch(e){ return undefined; }
+    ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);
+    url=c.toDataURL('image/jpeg',0.62);
+  }catch(e){ url=undefined; }
+  finally{
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    try{ resize(); }catch(e){}
+    applyCam();
+  }
+  return url;
 }
 function saveLocal(){
   if(!docId)return;
