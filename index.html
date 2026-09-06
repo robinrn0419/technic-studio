@@ -239,6 +239,40 @@ body.show-intro #empty{display:flex!important}
 .intro .tm{font-size:10px;color:var(--dim);opacity:.75;line-height:1.7;margin:10px 0 0}
 #empty.err .intro{border-color:#a8564d}
 #empty.err h2{color:#e0685f}
+/* ── 給作者建議 ── */
+#fbBtn{position:fixed;right:12px;bottom:44px;z-index:16;
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);background:transparent;border:1px solid var(--hair);
+  border-radius:var(--r);padding:7px 11px;cursor:pointer;
+  transition:opacity .3s var(--ease),color .2s,border-color .2s,transform .3s var(--ease)}
+#fbBtn:hover{color:var(--text);border-color:var(--hair-2)}
+#fbBtn.hide{opacity:0;transform:translateY(6px);pointer-events:none}
+#fbWrap{position:fixed;inset:0;z-index:60;display:none;
+  background:rgba(10,11,13,.72);backdrop-filter:blur(3px)}
+#fbWrap.on{display:flex;align-items:center;justify-content:center}
+#fbCard{width:min(520px,calc(100vw - 32px));background:var(--panel);
+  border:1px solid var(--hair);border-radius:8px;padding:26px 26px 20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#fbCard h3{margin:0 0 4px;font-size:17px;font-weight:600;letter-spacing:.01em}
+#fbCard .sub{margin:0 0 18px;font-size:12px;color:var(--muted);line-height:1.7}
+#fbCard label{display:block;font-family:var(--mono);font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+#fbText{width:100%;box-sizing:border-box;min-height:170px;resize:vertical;
+  background:var(--bg);color:var(--text);border:1px solid var(--hair);
+  border-radius:var(--r);padding:11px 12px;font:13px/1.75 var(--sans);outline:none}
+#fbText:focus,#fbMail:focus{border-color:var(--acc)}
+#fbMail{width:100%;box-sizing:border-box;margin-bottom:16px;
+  background:var(--bg);color:var(--text);border:1px solid var(--hair);
+  border-radius:var(--r);padding:9px 12px;font:13px var(--sans);outline:none}
+#fbMeta{display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  color:var(--dim);margin:6px 0 16px}
+#fbMeta.over{color:#e0574a}
+#fbRow{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+#fbNote{flex:1;font-size:11px;color:var(--muted);min-height:16px}
+#fbNote.err{color:#e0574a} #fbNote.ok{color:#7cb648}
+#fbHoney{position:absolute;left:-9999px;opacity:0}
+@media (max-width:980px){#fbBtn{bottom:12px}}
 .foot{position:fixed;right:12px;bottom:10px;z-index:6;text-align:right;pointer-events:none;
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);line-height:1.9}
@@ -430,6 +464,23 @@ body.show-intro #empty{display:flex!important}
 </div>
 <div id="angBadge"></div>
 <div id="toast"></div>
+<button id="fbBtn">給作者一個建議</button>
+<div id="fbWrap"><div id="fbCard">
+  <h3>給作者一個建議</h3>
+  <p class="sub">遇到什麼問題？或是想到哪裡可以更好？<br>
+     講得越具體越有幫助——例如哪個零件、哪一步、你原本預期會怎樣。</p>
+  <label for="fbText">你的建議</label>
+  <textarea id="fbText" maxlength="2000" placeholder="……"></textarea>
+  <div id="fbMeta"><span id="fbCount">0 / 2000</span><span>送出後我會親自看</span></div>
+  <label for="fbMail">你的信箱（選填，想收到回覆再留）</label>
+  <input id="fbMail" type="email" placeholder="you@example.com">
+  <input id="fbHoney" type="text" tabindex="-1" autocomplete="off">
+  <div id="fbRow">
+    <span id="fbNote"></span>
+    <button class="ink" id="fbCancel">取消</button>
+    <button id="fbSend">提交</button>
+  </div>
+</div></div>
 <div class="foot">格線 8 mm<div class="keys">Esc 取消 · Del 刪除 · Ctrl+Z 復原 · F 置中 · 1 2 3 視角</div></div>
 
 <script>
@@ -2189,6 +2240,61 @@ el('file').onchange=e=>{
   r.onload=()=>{try{pushHistory();restore(r.result);fitView();}
                 catch(err){alert('讀檔失敗：'+err.message);}};
   r.readAsText(f);e.target.value='';};
+
+/* ── 給作者建議 ── */
+// 到 https://web3forms.com 用你的 Gmail 免費申請，把拿到的 Access Key 貼在這裡。
+// 信箱本身不會出現在原始碼裡，只有這把 key。
+const W3F_KEY='aa214d96-e711-4991-a41f-26e13b4a0ca0';
+(function(){
+  const btn=el('fbBtn'), wrap=el('fbWrap'), tx=el('fbText'), mail=el('fbMail'),
+        cnt=el('fbCount'), meta=el('fbMeta'), note=el('fbNote'),
+        send=el('fbSend'), honey=el('fbHoney');
+  if(!btn)return;
+  const open=()=>{wrap.classList.add('on');setTimeout(()=>tx.focus(),40);};
+  const close=()=>{wrap.classList.remove('on');note.textContent='';note.className='';};
+  btn.onclick=open;
+  el('fbCancel').onclick=close;
+  wrap.addEventListener('mousedown',e=>{if(e.target===wrap)close();});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&wrap.classList.contains('on')){e.stopPropagation();close();}
+  },true);
+  const upd=()=>{const n=tx.value.length;cnt.textContent=n+' / 2000';
+    meta.classList.toggle('over',n>=2000);};
+  tx.addEventListener('input',upd);upd();
+
+  send.onclick=async()=>{
+    const body=tx.value.trim();
+    if(body.length<5){note.className='err';note.textContent='再多寫一點吧';return;}
+    if(honey.value){close();return;}                    // 機器人
+    if(W3F_KEY.indexOf('PASTE_')===0){
+      note.className='err';note.textContent='作者尚未設定收件金鑰';return;}
+    send.disabled=true;note.className='';note.textContent='送出中…';
+    try{
+      const r=await fetch('https://api.web3forms.com/submit',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          access_key:W3F_KEY,
+          subject:'TrunnionLab 使用者建議',
+          from_name:'TrunnionLab',
+          message:body,
+          email:mail.value.trim()||undefined,
+          screen:innerWidth+'×'+innerHeight,
+          ua:navigator.userAgent
+        })});
+      const j=await r.json();
+      if(j.success){note.className='ok';note.textContent='已送出，謝謝你';
+        tx.value='';mail.value='';upd();setTimeout(close,1100);}
+      else{note.className='err';note.textContent='送出失敗：'+(j.message||'未知錯誤');}
+    }catch(err){note.className='err';note.textContent='送出失敗，請檢查網路連線';}
+    send.disabled=false;
+  };
+
+  // 拖曳零件時淡出，把右下角讓給垃圾桶
+  const trash=el('trash');
+  if(trash) new MutationObserver(()=>
+    btn.classList.toggle('hide',trash.classList.contains('on'))
+  ).observe(trash,{attributes:true,attributeFilter:['class']});
+})();
 
 /* ── STL ── */
 function trisOf(geo,mat){
