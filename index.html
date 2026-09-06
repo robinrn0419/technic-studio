@@ -828,6 +828,50 @@ window.addEventListener('error',function(ev){
   showFail('程式出錯了',(ev.message||'未知錯誤')+' — 行 '+(ev.lineno||'?'));});
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module">
+/* ── 帳號 / 雲端（Firebase）──
+   模組化 SDK 只能在 type=module 裡跑，所以這裡把需要的動作
+   掛到 window.__cloud，主程式（非模組）再接上去。
+   連不上時 window.__cloud 不會存在，主程式自動退回純本地模式。 */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+         setPersistence, browserLocalPersistence }
+  from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAiRLM4fVIQemMwTMBc6Y8n3FeF5i2ZUJw",
+  authDomain: "trunnionlab.firebaseapp.com",
+  projectId: "trunnionlab",
+  storageBucket: "trunnionlab.firebasestorage.app",
+  messagingSenderId: "650557159889",
+  appId: "1:650557159889:web:d5b1359aa906fd5e6188f0"
+};
+
+try{
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+  setPersistence(auth, browserLocalPersistence).catch(()=>{});
+
+  window.__cloud = {
+    signIn:  () => signInWithPopup(auth, provider),
+    signOut: () => signOut(auth),
+    onAuth:  (cb) => onAuthStateChanged(auth, cb),
+    watch:   (uid, cb) => onSnapshot(
+               collection(db, 'users', uid, 'projects'),
+               snap => cb(snap.docs.map(d => d.data())),
+               err  => console.warn('[cloud] snapshot', err && err.code)),
+    put: (uid, id, data) => setDoc(doc(db, 'users', uid, 'projects', id), data),
+    del: (uid, id)       => deleteDoc(doc(db, 'users', uid, 'projects', id))
+  };
+  if (window.__cloudReady) window.__cloudReady();
+}catch(e){
+  console.warn('[cloud] init failed — staying local-only', e);
+}
+</script>
 <script>
 (function(){
 'use strict';
@@ -2614,7 +2658,7 @@ el('file').onchange=e=>{
 /* ── 專案庫 ──
    目前存在瀏覽器裡；接上帳號後同一份列表會改由雲端提供，
    因此所有讀寫都集中在 Store 這一層，之後只要換掉它的實作。   */
-const Store=(function(){
+const LocalStore=(function(){
   const IDX='trunnionlab:index', DOC=id=>'trunnionlab:doc:'+id, CUR='trunnionlab:current';
   const get=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
   const put=(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}};
@@ -2637,6 +2681,57 @@ const Store=(function(){
       if(body){try{const o=JSON.parse(body);o.name=name;put(DOC(id),JSON.stringify(o));}catch(e){}}},
     current(){return get(CUR);},
     setCurrent(id){put(CUR,id);}
+  };
+})();
+
+/* 登入後同一份介面改由雲端提供。所有讀寫都走 Store 這個門面，
+   _impl 指向 LocalStore（未登入）或 CloudStore（已登入）。 */
+let _impl = LocalStore;
+const Store = {
+  list:()=>_impl.list(),
+  read:(id)=>_impl.read(id),
+  write:(id,name,body,n)=>_impl.write(id,name,body,n),
+  remove:(id)=>_impl.remove(id),
+  rename:(id,name)=>_impl.rename(id,name),
+  current:()=>_impl.current(),
+  setCurrent:(id)=>_impl.setCurrent(id),
+  isCloud:()=>_impl!==LocalStore
+};
+
+/* CloudStore：與 LocalStore 同介面，背後是 Firestore users/{uid}/projects。
+   用 onSnapshot 在本地維持一份快取，讓其餘程式維持同步（非 async）。 */
+const CloudStore=(function(){
+  let uid=null, unsub=null, meta=[], body={};
+  function begin(u){
+    uid=u; if(unsub)unsub();
+    unsub=window.__cloud.watch(uid,rows=>{
+      meta=rows.map(r=>({id:r.id,name:r.name,updated:r.updated,parts:r.parts||0}));
+      body={}; rows.forEach(r=>{ body[r.id]=r.body; });
+      if(typeof renderDocs==='function')renderDocs();
+    });
+  }
+  function end(){ if(unsub)unsub(); unsub=null; uid=null; meta=[]; body={}; }
+  function save(id,name,b,n){
+    const rec={id:id,name:name,updated:new Date().toISOString(),parts:n||0,body:b};
+    const i=meta.findIndex(d=>d.id===id);
+    const m={id:id,name:name,updated:rec.updated,parts:rec.parts};
+    if(i<0)meta.push(m); else meta[i]=m;
+    body[id]=b;
+    window.__cloud.put(uid,id,rec).catch(e=>toast('雲端儲存失敗：'+(e&&e.message||e),true));
+    return true;
+  }
+  return {
+    _begin:begin, _end:end,
+    list(){return meta.slice().sort((x,y)=>(y.updated||'').localeCompare(x.updated||''));},
+    read(id){return body[id]||null;},
+    write(id,name,b,n){return save(id,name,b,n);},
+    remove(id){ meta=meta.filter(d=>d.id!==id); delete body[id];
+      window.__cloud.del(uid,id).catch(e=>toast('雲端刪除失敗：'+(e&&e.message||e),true)); },
+    rename(id,name){ const d=meta.find(x=>x.id===id); let b=body[id];
+      if(b){try{const o=JSON.parse(b);o.name=name;b=JSON.stringify(o);}catch(e){}}
+      save(id,name,b||body[id]||'{}',(d&&d.parts)||0); },
+    current(){return null;},
+    setCurrent(){}
   };
 })();
 
@@ -2782,9 +2877,7 @@ el('dlNew').onclick=async()=>{
   if(n===null)return; newDoc(n.trim()||'未命名'); enterWorkbench(null);};
 el('dlImport').onclick=()=>el('file').click();
 
-/* ── 帳號 ──
-   還沒接上 Firebase，先維持未登入狀態。
-   接上之後只要改寫 setAuthState 與按鈕行為即可。   */
+/* ── 帳號 ── */
 function setAuthState(user){
   const n=el('acctName'), av=el('avatar'), b=el('btnAuth');
   if(user){
@@ -2798,7 +2891,45 @@ function setAuthState(user){
     b.textContent='登入';
   }
 }
-el('btnAuth').onclick=()=>toast('帳號系統還沒接上，專案目前存在這台裝置。');
+let TL_USER=null;
+async function cloudMigrate(){
+  const mine=LocalStore.list();
+  if(!mine.length)return;
+  try{ if(localStorage.getItem('trunnionlab:migrated'))return; }catch(e){}
+  const ok=await Ask.confirm('複製到你的帳號？',
+    '這台裝置有 '+mine.length+' 個專案。要把它們複製到你的帳號，'+
+    '之後在別的裝置也能開嗎？本地那份會保留。','複製');
+  try{ localStorage.setItem('trunnionlab:migrated','1'); }catch(e){}
+  if(!ok)return;
+  let n=0;
+  mine.forEach(m=>{ const b=LocalStore.read(m.id); if(b){ CloudStore.write(m.id,m.name,b,m.parts); n++; } });
+  toast('已複製 '+n+' 個專案到帳號。');
+}
+function onCloudAuth(user){
+  TL_USER=user||null;
+  if(user){
+    setAuthState({name:user.displayName,email:user.email,photo:user.photoURL});
+    CloudStore._begin(user.uid);
+    _impl=CloudStore;
+    setTimeout(cloudMigrate,1400);
+  }else{
+    CloudStore._end();
+    _impl=LocalStore;
+    setAuthState(null);
+  }
+  if(typeof renderDocs==='function')renderDocs();
+}
+el('btnAuth').onclick=()=>{
+  if(!window.__cloud){ toast('雲端服務尚未載入，稍後再試。',true); return; }
+  if(TL_USER){ window.__cloud.signOut(); return; }
+  window.__cloud.signIn().catch(e=>{
+    const c=e&&e.code;
+    if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return;
+    if(c==='auth/unauthorized-domain'){ toast('這個網域還沒加進 Firebase 的授權清單。',true); return; }
+    if(c==='auth/popup-blocked'){ toast('瀏覽器擋掉了登入彈窗，請允許後再試。',true); return; }
+    toast('登入失敗：'+(e&&e.message||e),true);
+  });
+};
 
 /* ── 說明 ──
    內容沿用工作台空狀態的那份，不另外複製一份文字。 */
@@ -2839,6 +2970,8 @@ const BUILD='2026.09.06';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
+if(window.__cloud){ window.__cloud.onAuth(onCloudAuth); }
+else { window.__cloudReady=()=>window.__cloud.onAuth(onCloudAuth); }
 
 /* ── 給作者建議 ── */
 // 到 https://web3forms.com 用你的 Gmail 免費申請，把拿到的 Access Key 貼在這裡。
