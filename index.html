@@ -263,15 +263,18 @@ body.show-intro #empty{display:flex!important}
 #home{position:fixed;inset:0;z-index:50;display:none;background:var(--bg);overflow:auto}
 #home.on{display:block}
 body.home .chrome,body.home .dock,body.home #stage,
-body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display:none}
+body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
 
-#homeIn{--gut:76px;max-width:1020px;margin:0 auto;padding:0 40px 140px}
+#homeIn{--gut:40px;--pad:40px;max-width:860px;margin:0 auto;padding:0 var(--pad) 130px}
+/* 一條左緣貫穿全頁；編號吊在它左邊的空欄裡 */
+#homeTop,#howto,#homeBar,#dlList,#fbBlock,#homeEnd{
+  padding-left:var(--gut)}
 #homeTop{padding:104px 0 0;position:relative}
-#homeTop h1{margin:0;font-size:clamp(40px,7vw,78px);font-weight:600;
-  letter-spacing:-.035em;line-height:.96;max-width:13ch}
-#homeTop h1 em{display:block;font-style:normal;font-size:.44em;font-weight:500;
-  letter-spacing:-.01em;color:var(--dim);margin-top:.18em}
-#homeLede{margin:34px 0 0;max-width:46ch;font-size:13.5px;line-height:1.85;color:var(--muted)}
+#homeTop h1{margin:0;font-size:clamp(46px,9.4vw,88px);font-weight:600;
+  letter-spacing:-.038em;line-height:.92}
+#homeTop h1 em{display:block;font-style:normal;font-size:.34em;font-weight:500;
+  letter-spacing:-.005em;color:var(--muted);margin-top:.3em}
+#homeLede{margin:30px 0 0;max-width:44ch;font-size:15px;line-height:1.8;color:var(--muted)}
 
 /* 帳號：吊在標題右上，不參與主要左緣 */
 #acct{position:absolute;top:104px;right:0;display:flex;align-items:center;gap:11px}
@@ -283,31 +286,39 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
   border:1px solid var(--hair);object-fit:cover;display:none}
 
 /* 通欄細線，從版面左右滿出去 */
-#homeBar{margin-top:96px;display:flex;align-items:baseline;gap:16px;padding-bottom:14px;
+#homeBar{margin-top:76px;display:flex;align-items:center;gap:14px;padding-bottom:16px;
   position:relative}
-#homeBar::after{content:'';position:absolute;left:-40px;right:-40px;bottom:0;
-  height:1px;background:var(--hair-2)}
+#homeBar #dlImport{font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;padding:8px 10px}
+#homeBar #dlNew{padding:9px 17px;font-size:12.5px}
+#homeBar::after{content:'';position:absolute;bottom:0;height:1px;background:var(--hair-2);
+  left:calc(-1 * (var(--pad) + var(--gut)));right:calc(-1 * var(--pad))}
 #homeBar h2{margin:0;font-family:var(--mono);font-size:9px;letter-spacing:.22em;
   text-transform:uppercase;color:var(--text);font-weight:400}
 #homeBar .sp{flex:1}
 #homeCount{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--dim)}
 
 #dlList{margin-bottom:0}
+/* 列的底線與上方通欄線同一個起點 */
+.dlRow{margin-right:calc(-1 * var(--pad));padding-right:var(--pad)}
 .dlEmpty{margin:64px 0 0;max-width:42ch;font-size:13.5px;color:var(--muted);line-height:1.95}
 
 .dlRow{position:relative;display:flex;align-items:baseline;gap:20px;
-  padding:22px 0 20px var(--gut);border-bottom:1px solid var(--hair);cursor:pointer;
+  margin-left:calc(-1 * var(--gut));
+  padding:24px 0 22px var(--gut);
+  border-bottom:1px solid var(--hair);cursor:pointer;
   transition:background .34s var(--ease),padding-left .34s var(--ease)}
 .dlRow:hover{background:var(--raise);padding-left:calc(var(--gut) + 8px)}
 /* 索引編號吊在左緣之外 */
-.dlIx{position:absolute;left:0;top:24px;font-family:var(--mono);font-size:10px;
+.dlIx{position:absolute;left:0;top:24px;
+  font-family:var(--mono);font-size:10px;
   font-variant-numeric:tabular-nums;letter-spacing:.14em;color:var(--dim);
   transition:color .34s var(--ease)}
 .dlRow:hover .dlIx{color:var(--muted)}
 .dlRow.cur .dlIx{color:var(--acc-t)}
 .dlMain{flex:1;min-width:0}
-.dlMain b{display:block;font-size:19px;font-weight:500;letter-spacing:-.012em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlMain b{display:block;font-size:22px;font-weight:500;letter-spacing:-.016em;
+  color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dlMain span{display:block;margin-top:9px;font-family:var(--mono);font-size:9px;
   font-variant-numeric:tabular-nums;letter-spacing:.16em;color:var(--dim)}
 .dlAct{display:flex;gap:3px;opacity:0;transform:translateX(6px);
@@ -318,14 +329,101 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
   border-radius:0;padding:7px 9px;cursor:pointer;transition:color .2s}
 .dlAct button:hover{color:var(--text)}
 
-#homeFoot{display:flex;gap:6px;padding-top:26px}
-#build{margin:26px 0 0;font-family:var(--mono);font-size:9px;
+/* 怎麼開始 —— 換一種材質，讓它不會溶進頁面裡 */
+#howto{margin-top:76px;padding-top:24px;position:relative}
+#howto::before{content:'';position:absolute;top:0;height:1px;background:var(--hair-2);
+  left:calc(-1 * (var(--pad) + var(--gut)));right:calc(-1 * var(--pad))}
+#howtoBar{display:flex;align-items:center;gap:14px;width:100%;
+  background:transparent;border:0;border-radius:0;padding:0;
+  cursor:pointer;text-align:left;color:inherit}
+#howtoBar:hover{background:transparent}
+#howtoBar:hover .chev{border-color:var(--text)}
+#howto h2{margin:0;font-size:26px;font-weight:600;letter-spacing:-.022em;
+  text-transform:none;font-family:var(--sans);color:var(--text);flex:1}
+#howto .chev{width:9px;height:9px;flex:0 0 auto;margin-right:2px;
+  border-right:1.4px solid var(--muted);border-bottom:1.4px solid var(--muted);
+  transform:rotate(45deg) translate(-2px,-2px);
+  transition:transform .42s var(--ease),border-color .24s}
+#howto.fold .chev{transform:rotate(-135deg) translate(-2px,-2px)}
+/* 0fr → 1fr：高度可以動畫，內容不必寫死 */
+#howtoBody{display:grid;grid-template-rows:1fr;margin-left:0;
+  transition:grid-template-rows .46s var(--ease)}
+#howtoBody>div{overflow:hidden;min-height:0}
+#howto.fold #howtoBody{grid-template-rows:0fr}
+#howto.fold{padding-bottom:0}
+#howto .sub{margin:12px 0 0;max-width:44ch;font-size:14px;line-height:1.8;color:var(--muted)}
+#howto ol{list-style:none;margin:52px 0 0;padding:0;counter-reset:st}
+#howto li{counter-increment:st;position:relative;padding:0 0 42px}
+#howto li::before{content:counter(st,decimal-leading-zero);position:absolute;
+  left:calc(-1 * var(--gut));top:0;
+  font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums;
+  letter-spacing:.02em;color:var(--dim);font-weight:400}
+#howto li b{display:block;font-size:19px;font-weight:500;letter-spacing:-.015em;color:var(--text)}
+#howto li p{margin:12px 0 0;max-width:52ch;font-size:14px;line-height:1.95;color:var(--muted)}
+#howto>button{font-family:var(--mono);font-size:9px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  background:transparent;border:0;border-bottom:1px solid var(--hair-2);
+  border-radius:0;padding:7px 1px;cursor:pointer;transition:color .24s var(--ease)}
+#howto>button:hover{color:var(--text);background:transparent}
+#fbBlock::before{content:'';position:absolute;top:0;height:1px;background:var(--hair);
+  left:calc(-1 * (var(--pad) + var(--gut)));right:calc(-1 * var(--pad))}
+#fbBlock h2{margin:0;font-family:var(--mono);font-size:9px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--text);font-weight:400}
+
+/* 建議 */
+#fbBlock{margin-top:88px;position:relative;padding-top:16px}
+#fbBlock p{margin:30px 0 0;max-width:44ch;font-size:20px;line-height:1.6;
+  letter-spacing:-.016em;color:var(--text)}
+#fbBlock button{margin-top:30px;padding:11px 20px;font-size:13px}
+
+#homeEnd{margin-top:96px}
+#build{margin:0;font-family:var(--mono);font-size:9px;
   letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+/* 說明 */
+#guide{position:fixed;inset:0;z-index:70;display:none;background:var(--bg);overflow:auto}
+#guide.on{display:block}
+#guideIn{max-width:660px;margin:0 auto;padding:104px 40px 120px;position:relative}
+#guideIn h2{margin:0;font-size:clamp(32px,5.4vw,54px);font-weight:600;
+  letter-spacing:-.032em;line-height:1.04;max-width:15ch}
+#guideIn .gLead{margin:34px 0 0;max-width:50ch;font-size:17px;line-height:1.8;
+  letter-spacing:-.008em;color:var(--text)}
+#guideIn section{margin-top:76px;padding-top:18px;position:relative}
+#guideIn section::before{content:'';position:absolute;left:0;top:0;
+  width:34px;height:1px;background:var(--hair-2)}
+#guideIn h3{margin:0 0 16px;font-family:var(--mono);font-size:9px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--text);font-weight:400}
+#guideIn section p{margin:0 0 14px;max-width:52ch;font-size:14px;
+  line-height:1.95;color:var(--muted)}
+#guideIn section p:last-child{margin-bottom:0}
+#guideIn b{color:var(--text);font-weight:600}
+#guideIn .gTm{margin:88px 0 0;max-width:52ch;font-size:10.5px;line-height:1.8;
+  color:var(--dim)}
+#guideClose{position:fixed;top:28px;right:32px;z-index:71;
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);background:var(--panel);border:1px solid var(--hair);
+  border-radius:var(--r);padding:9px 13px;cursor:pointer}
+#guideClose:hover{color:var(--text);border-color:var(--hair-2)}
+@media (max-width:760px){
+  #howto{margin-top:52px;padding-top:20px}
+  #howto::before{left:-20px;right:-20px}
+  #howto h2{font-size:23px}
+  #howto ol{margin-top:36px}
+  #howto li{padding-bottom:34px}
+  #howto li b{font-size:17px}
+  #howto li::before{font-size:17px}
+  #fbBlock::before{left:-20px;right:-20px}
+  #fbBlock{margin-top:64px}
+  #fbBlock p{font-size:16px}
+  #homeEnd{margin-top:60px}
+  #guideIn{padding:76px 20px 90px}
+  #guideClose{top:16px;right:16px}
+}
 @media (prefers-reduced-motion:reduce){
-  .dlRow,.dlIx,.dlAct{transition:none}
+  .dlRow,.dlIx,.dlAct,#howtoBody,#howto .chev{transition:none}
 }
 @media (max-width:760px){
-  #homeIn{--gut:44px;padding:0 20px 96px}
+  #homeIn{--gut:28px;--pad:20px;padding:0 var(--pad) 90px}
   #homeTop{padding-top:64px}
   #acct{position:static;margin-top:34px;justify-content:flex-start}
   #acctName{text-align:left}
@@ -335,13 +433,6 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
   .dlMain b{font-size:16px}
 }
 /* ── 給作者建議 ── */
-#fbBtn{position:fixed;right:12px;bottom:44px;z-index:16;
-  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);background:transparent;border:1px solid var(--hair);
-  border-radius:var(--r);padding:7px 11px;cursor:pointer;
-  transition:opacity .3s var(--ease),color .2s,border-color .2s,transform .3s var(--ease)}
-#fbBtn:hover{color:var(--text);border-color:var(--hair-2)}
-#fbBtn.hide{opacity:0;transform:translateY(6px);pointer-events:none}
 #fbWrap{position:fixed;inset:0;z-index:60;display:none;
   background:rgba(10,11,13,.72);backdrop-filter:blur(3px)}
 #fbWrap.on{display:flex;align-items:center;justify-content:center}
@@ -406,7 +497,6 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
     <button class="quiet" id="save" title="存檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8"/><path d="M5 7l3 3 3-3"/><path d="M2.5 13h11"/></svg></button>
     <button class="quiet" id="load" title="讀檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V3"/><path d="M5 6l3-3 3 3"/><path d="M2.5 13h11"/></svg></button>
     <input type="file" id="file" accept=".json" style="display:none">
-    <button class="quiet" id="btnHelp" title="說明">說明</button>
     <button id="btnTol">公差 <span class="caret">▼</span></button>
     <button class="ink" id="expFused" disabled>融合 STL</button>
     <button id="expParts" disabled>分件 STL</button>
@@ -530,32 +620,11 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
 
 <div id="empty">
  <article class="intro">
-  <h2>TrunnionLab · 科技零件工作台</h2>
-  <p class="lead"><b>TrunnionLab</b> 讓你在瀏覽器裡拼裝科技系列積木零件，一鍵轉成可以 3D 列印的 STL 檔。
-  免安裝、免註冊，所有運算都在你自己的裝置上完成。</p>
-
-  <h3>能做什麼</h3>
-  <ul>
-    <li><b>只收正版有的零件</b>　直樑、薄樑、直角樑、T 樑、彎樑，
-        每一款都對應實際存在的樂高零件並標示官方編號，不會出現買不到的尺寸。</li>
-    <li><b>拼裝</b>　滑鼠移到零件上就會浮出孔的軸線，點兩根軸即可接合。</li>
-    <li><b>任意角度斜撐</b>　選兩個孔，自動生出剛好跨越那段距離的樑。
-        正版零件的孔距鎖死在 8 mm 整數倍，做不到任意角度；自己列印就沒有這個限制。</li>
-    <li><b>真布林聯集</b>　匯出時把所有零件實際融成單一封閉模型，
-        接合處和重疊處不會有破面。</li>
-    <li><b>公差可調</b>　主孔補償、沉孔直徑、沉孔深度都是參數，
-        並附公差測試件產生器，印一片就能校出你那台 FDM 印表機的實際值。</li>
-  </ul>
-
-  <h3>為什麼需要沉孔</h3>
-  <p>科技系列的孔不是一個直圓筒：兩端各有一圈較大的凹槽。摩擦插銷中段那兩道凸稜
-  卡進這圈凹槽，才有固定力。少了它，插銷插得進去卻一拉就掉。這個工具產生的孔是
-  三段式剖面，沉孔尺寸可以自己校。</p>
-
-  <p class="hint">從左側零件抽屜取幾支樑開始 ·
-  拖零件 移動 · 拖空白 轉視角 · 右鍵拖 平移 · 滾輪 縮放</p>
-  <p class="tm">本站與 LEGO 集團無任何關聯。LEGO® 與 Technic® 為 LEGO 集團之註冊商標，
-  此處僅用於說明尺寸相容性。</p>
+  <h2>畫面是空的</h2>
+  <p class="lead">從左側零件抽屜取一支樑開始。點一下，它會跟著游標走；
+  靠近別的零件會自動吸附到最近的孔，再點一下放下。</p>
+  <p class="hint">拖零件 移動 · 拖空白 轉視角 · 右鍵拖 平移 · 滾輪 縮放 ·
+  F 翻面 · Esc 取消</p>
  </article>
 </div>
 <div id="angBadge"></div>
@@ -570,6 +639,58 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
     <button class="ink" id="askYes">確定</button>
   </div>
 </div></div>
+<div id="guide"><button id="guideClose">關閉</button><div id="guideIn">
+  <h2>這個工具在做什麼</h2>
+  <p class="gLead">正版科技系列的孔距鎖死在 8 mm 的整數倍。多數時候這是優點，
+  但只要你需要一個不落在格點上的角度、一段剛好的長度、或一個根本沒出過的尺寸，
+  就沒有零件可以買。TrunnionLab 讓你在瀏覽器裡把那個零件畫出來，直接印。</p>
+
+  <section>
+    <h3>零件庫</h3>
+    <p>直樑、薄樑、直角樑、T 樑、彎樑，每一款都對應實際存在的樂高零件並標示官方編號。
+    這是刻意的限制——如果一個尺寸買不到，放進來只會害你以為它存在。
+    正版沒有偶數長度的厚樑，這裡就沒有。</p>
+    <p>另外收自製件，例如 8×8 彎樑加轉角橫樑。那些標明是自製，只能印，買不到。</p>
+  </section>
+
+  <section>
+    <h3>顯示的模型就是列印的模型</h3>
+    <p>沒有「螢幕上一套、匯出時另一套」。公差是建模參數：主孔補償、沉孔直徑、沉孔深度
+    都在公差面板裡，改下去畫面上的孔就真的變了。你看到的就是會從噴頭出來的東西。</p>
+    <p>第一次列印前先用內建的公差測試件產生器印一片，量出你那台機器的實際孔徑，
+    再把數字填回去。這一步做過一次，之後所有零件都會準。</p>
+  </section>
+
+  <section>
+    <h3>為什麼孔要有沉孔</h3>
+    <p>科技系列的孔不是一個直圓筒。兩端各有一圈較大的凹槽，摩擦插銷中段那兩道凸稜
+    卡進這圈凹槽，才會有固定力。少了它，插銷插得進去，卻一拉就掉。</p>
+    <p>所以這裡產生的每個圓孔都是三段式剖面：中段主孔，兩端各一圈沉孔。
+    尺寸可以自己校。</p>
+  </section>
+
+  <section>
+    <h3>任意角度斜撐</h3>
+    <p>選中兩個孔，工具會生出一根剛好跨越那段距離的樑。長度是算出來的，不是湊出來的，
+    所以你可以做出 37 度、也可以做出 8.4 mm 的孔距——正版零件永遠做不到的東西。</p>
+  </section>
+
+  <section>
+    <h3>匯出</h3>
+    <p><b>融合 STL</b> 把整組零件實際做布林聯集，融成單一封閉模型，接合處和重疊處不會有破面。
+    <b>分件 STL</b> 則逐件輸出，每一件都會先通過水密檢查才給你。</p>
+    <p>幾何有問題時工具會擋下來並告訴你哪一件不水密，而不是丟一個切片軟體打不開的檔案給你。</p>
+  </section>
+
+  <section>
+    <h3>你的檔案在哪裡</h3>
+    <p>目前存在這台裝置的瀏覽器裡。可以隨時把任何一份專案下載成 JSON，換一台機器再匯入回來。
+    帳號登入與跨裝置同步還在做。</p>
+  </section>
+
+  <p class="gTm">本站與 LEGO 集團無任何關聯。LEGO® 與 Technic® 為 LEGO 集團之註冊商標，
+  此處僅用於說明尺寸相容性。</p>
+</div></div>
 <div id="home"><div id="homeIn">
   <div id="homeTop">
     <h1>TrunnionLab<br><em>科技零件工作台</em></h1>
@@ -581,17 +702,42 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
       <button class="quiet" id="btnAuth">登入</button>
     </div>
   </div>
+  <section id="howto">
+    <button id="howtoBar" aria-expanded="true" aria-controls="howtoBody">
+      <h2>怎麼開始</h2>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    <div id="howtoBody"><div>
+    <p class="sub">三步就能印出第一個零件。全部都在瀏覽器裡完成，不用安裝任何東西。</p>
+    <ol>
+      <li><b>取一支樑</b>
+        <p>從左側抽屜點一款零件，它會跟著游標走。靠近別的零件時會自動吸附到最近的孔，
+           再點一下放下。滾輪轉零件，F 翻面，Esc 取消。</p></li>
+      <li><b>接起來</b>
+        <p>滑鼠移到零件上會浮出孔的軸線。孔對孔、銷對孔、銷對銷都能接。
+           選中兩個孔還能生出一根剛好跨越那段距離的斜撐——正版零件做不到的角度。</p></li>
+      <li><b>輸出列印</b>
+        <p>「融合 STL」把整組融成單一封閉模型，接合處不會有破面；
+           「分件 STL」則逐件輸出。第一次列印前先產一個公差測試件，量出你印表機的實際孔徑。</p></li>
+    </ol>
+    <button id="btnGuide">完整說明</button>
+    </div></div>
+  </section>
+
   <div id="homeBar">
-    <h2>我的專案</h2><div class="sp"></div><span id="homeCount"></span>
+    <h2>我的專案</h2><span id="homeCount"></span><div class="sp"></div>
+    <button class="quiet" id="dlImport">匯入 JSON</button>
+    <button class="ink" id="dlNew">新專案</button>
   </div>
   <div id="dlList"></div>
-  <p id="build"></p>
-  <div id="homeFoot">
-    <button class="ink" id="dlNew">新專案</button>
-    <button class="quiet" id="dlImport">匯入 JSON</button>
-  </div>
+  <section id="fbBlock">
+    <h2>給作者一個建議</h2>
+    <p>這個網站還在長。哪裡卡住、想要哪個零件、哪一步不直覺——直接告訴我，我看得到每一封。</p>
+    <button class="ink" id="fbBtn">寫一封給作者</button>
+  </section>
+
+  <div id="homeEnd"><p id="build"></p></div>
 </div></div>
-<button id="fbBtn">給作者一個建議</button>
 <div id="fbWrap"><div id="fbCard">
   <h3>給作者一個建議</h3>
   <p class="sub">遇到什麼問題？或是想到哪裡可以更好？<br>
@@ -604,8 +750,8 @@ body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display
   <input id="fbHoney" type="text" tabindex="-1" autocomplete="off">
   <div id="fbRow">
     <span id="fbNote"></span>
-    <button class="ink" id="fbCancel">取消</button>
-    <button id="fbSend">提交</button>
+    <button class="quiet" id="fbCancel">取消</button>
+    <button class="ink" id="fbSend">提交</button>
   </div>
 </div></div>
 <div class="foot">格線 8 mm<div class="keys">Esc 取消 · Del 刪除 · Ctrl+Z 復原 · F 置中 · 1 2 3 視角</div></div>
@@ -2117,11 +2263,6 @@ function togglePop(pop,btn){
   if(!open){pop.classList.add('open');btn.classList.add('on');}
 }
 el('btnTol').onclick=e=>{e.stopPropagation();togglePop(el('popTol'),el('btnTol'));};
-el('btnHelp').onclick=()=>{
-  const on=document.body.classList.toggle('show-intro');
-  el('btnHelp').classList.toggle('on',on);
-  if(!on&&parts.length)el('empty').style.display='none';
-};
 document.addEventListener('pointerdown',e=>{
   if(e.target.closest('.pop')||e.target.closest('.chrome'))return;
   closePops();});
@@ -2474,6 +2615,7 @@ function fmtTime(iso){
 }
 function renderDocs(){
   const box=el('dlList'), a=Store.list(), cnt=el('homeCount');
+  if(window.syncHowto)syncHowto(a.length>0);
   if(cnt)cnt.textContent=a.length?String(a.length).padStart(2,'0')+' 份':'';
   if(!a.length){box.innerHTML='<p class="dlEmpty">還沒有任何專案。'+
     '按下方的「新專案」開始，或把之前存下的 JSON 檔匯入回來。</p>';return;}
@@ -2594,6 +2736,40 @@ function setAuthState(user){
 }
 el('btnAuth').onclick=()=>toast('帳號系統還沒接上，專案目前存在這台裝置。');
 
+/* ── 說明 ──
+   內容沿用工作台空狀態的那份，不另外複製一份文字。 */
+/* ── 教學展開／收合 ──
+   第一次來的人預設展開；已經有專案的人預設收起，
+   之後照他自己按過的狀態記住。   */
+(function(){
+  const K='trunnionlab:howto', sec=el('howto'), bar=el('howtoBar');
+  if(!sec||!bar)return;
+  const read=()=>{try{return localStorage.getItem(K);}catch(e){return null;}};
+  const write=v=>{try{localStorage.setItem(K,v);}catch(e){}};
+  function apply(open){
+    sec.classList.toggle('fold',!open);
+    bar.setAttribute('aria-expanded',open?'true':'false');
+  }
+  window.syncHowto=function(hasProjects){
+    const saved=read();
+    apply(saved===null ? !hasProjects : saved==='open');
+  };
+  bar.onclick=()=>{
+    const open=sec.classList.contains('fold');
+    apply(open);write(open?'open':'shut');
+  };
+})();
+
+el('btnGuide').onclick=()=>{
+  el('guide').classList.add('on');
+  el('guide').scrollTop=0;
+};
+el('guideClose').onclick=()=>el('guide').classList.remove('on');
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&el('guide').classList.contains('on')){
+    e.stopPropagation();el('guide').classList.remove('on');}
+},true);
+
 /* 版本印記：用來確認打開的是不是最新版 */
 const BUILD='2026.09.06';
 el('build').textContent='版本 '+BUILD;
@@ -2648,11 +2824,6 @@ const W3F_KEY='aa214d96-e711-4991-a41f-26e13b4a0ca0';
     send.disabled=false;
   };
 
-  // 拖曳零件時淡出，把右下角讓給垃圾桶
-  const trash=el('trash');
-  if(trash) new MutationObserver(()=>
-    btn.classList.toggle('hide',trash.classList.contains('on'))
-  ).observe(trash,{attributes:true,attributeFilter:['class']});
 })();
 
 /* ── STL ── */
