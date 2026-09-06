@@ -332,14 +332,11 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   transition:color .34s var(--ease)}
 .dlRow:hover .dlIx{color:var(--muted)}
 .dlRow.cur .dlIx{color:var(--acc-t)}
-.dlThumb{flex:0 0 auto;align-self:center;width:128px;height:80px;border-radius:4px;
-  border:1px solid var(--hair);background:var(--view);overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-  transition:border-color .34s var(--ease)}
-.dlRow:hover .dlThumb{border-color:var(--hair-2)}
-.dlThumb img{width:100%;height:100%;object-fit:cover;display:block}
-.dlThumb.none{border-style:dashed}
-.dlThumb.none::after{content:'';width:34px;height:6px;border-radius:3px;background:var(--hair-2)}
+.dlThumb{flex:0 0 auto;align-self:center;width:72px;height:46px;border-radius:4px;
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.dlThumb img{width:100%;height:100%;object-fit:contain;display:block}
+.dlThumb.none{border:1px dashed var(--hair)}
+.dlThumb.none::after{content:'';width:26px;height:5px;border-radius:2.5px;background:var(--hair-2)}
 .dlMain{flex:1;min-width:0}
 .dlMain b{display:block;font-size:22px;font-weight:500;letter-spacing:-.016em;
   color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -463,7 +460,7 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   .dlAct{opacity:1;transform:none}
   .dlMain b{font-size:16px}
   .dlRow{gap:14px}
-  .dlThumb{width:96px;height:60px}
+  .dlThumb{width:54px;height:36px}
 }
 /* ── 給作者建議 ── */
 #fbWrap{position:fixed;inset:0;z-index:60;display:none;
@@ -1399,7 +1396,7 @@ const stage=el('stage');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x2b2d33);
 const camera=new THREE.PerspectiveCamera(40,1,1,6000);
-const renderer=new THREE.WebGLRenderer({antialias:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 stage.appendChild(renderer.domElement);
 const cv=renderer.domElement;
@@ -2776,31 +2773,35 @@ function viewThumb(){
   if(box.isEmpty())return undefined;
   const ctr=box.getCenter(V3()), r=Math.max(box.getSize(V3()).length()/2,4);
   const RW=512, RH=320, asp=RW/RH, W=256, H=160;
+  const bg=scene.background, gV=grid.visible, mV=markers.visible,
+        zV=gizmo.visible, ca=renderer.getClearAlpha();
   let url;
   try{
-    // 依縮圖比例算出剛好框住整個模型的距離（垂直、水平取較窄者當限制），留一點邊界。
-    // 視角沿用使用者目前的方位，只把遠近正規化，讓大件小件的縮圖都置中又飽滿。
+    // 去背：只留零件本身，拿掉底色、格線、孔軸與旋轉盤。
+    // 視角沿用使用者目前方位，距離收到零件幾乎貼齊邊框，讓零件填滿整格。
     const vHalf=camera.fov*Math.PI/360;
     const hHalf=Math.atan(Math.tan(vHalf)*asp);
-    const dist=r/Math.sin(Math.min(vHalf,hHalf))*1.15;
+    const dist=r/Math.sin(Math.min(vHalf,hHalf))*1.05;
     const sp=Math.sin(cam.phi), cp=Math.cos(cam.phi);
     camera.position.set(ctr.x+dist*sp*Math.cos(cam.theta),
                         ctr.y+dist*sp*Math.sin(cam.theta),
                         ctr.z+dist*cp);
     camera.up.set(0,0,1); camera.lookAt(ctr);
     camera.aspect=asp; camera.updateProjectionMatrix();
-    renderer.setPixelRatio(1); renderer.setSize(RW,RH,false);
+    scene.background=null;
+    grid.visible=false; markers.visible=false; gizmo.visible=false;
+    renderer.setPixelRatio(1); renderer.setClearAlpha(0); renderer.setSize(RW,RH,false);
     renderer.render(scene,camera);
 
     const src=renderer.domElement;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
-    ctx.fillStyle=(getComputedStyle(document.body).getPropertyValue('--view')||'#2b2d33').trim();
-    ctx.fillRect(0,0,W,H);
     ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);
-    url=c.toDataURL('image/jpeg',0.62);
+    url=c.toDataURL('image/png');                 // PNG 保留透明背景
   }catch(e){ url=undefined; }
   finally{
+    scene.background=bg; grid.visible=gV; markers.visible=mV; gizmo.visible=zV;
+    renderer.setClearAlpha(ca);
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     try{ resize(); }catch(e){}
     applyCam();
@@ -2819,10 +2820,10 @@ addEventListener('beforeunload',saveLocal);
    把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
    雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
 function migrateThumbs(){
-  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='2')return; }catch(e){}
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='3')return; }catch(e){}
   if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
   const list=LocalStore.list();
-  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','2');}catch(e){}};
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','3');}catch(e){}};
   if(!list.length){ doneFlag(); return; }
   const keepName=docName;
   atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
