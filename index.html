@@ -2778,16 +2778,25 @@ function viewThumb(){
   let url;
   try{
     // 去背：只留零件本身，拿掉底色、格線、孔軸與旋轉盤。
-    // 視角沿用使用者目前方位，距離收到零件幾乎貼齊邊框，讓零件填滿整格。
-    const vHalf=camera.fov*Math.PI/360;
-    const hHalf=Math.atan(Math.tan(vHalf)*asp);
-    const dist=r/Math.sin(Math.min(vHalf,hHalf))*1.05;
+    // 視角沿用使用者目前方位；迭代收斂距離，讓零件投影後幾乎貼齊邊框。
     const sp=Math.sin(cam.phi), cp=Math.cos(cam.phi);
-    camera.position.set(ctr.x+dist*sp*Math.cos(cam.theta),
-                        ctr.y+dist*sp*Math.sin(cam.theta),
-                        ctr.z+dist*cp);
-    camera.up.set(0,0,1); camera.lookAt(ctr);
-    camera.aspect=asp; camera.updateProjectionMatrix();
+    const dir=V3(sp*Math.cos(cam.theta),sp*Math.sin(cam.theta),cp);
+    const corners=[];
+    for(let i=0;i<8;i++)corners.push(V3(
+      (i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,(i&4)?box.max.z:box.min.z));
+    camera.up.set(0,0,1); camera.aspect=asp;
+    let dist=r*2.5;
+    for(let it=0;it<5;it++){
+      camera.position.copy(ctr).addScaledVector(dir,dist);
+      camera.lookAt(ctr);
+      camera.updateMatrixWorld();
+      camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+      camera.updateProjectionMatrix();
+      let mx=0,my=0;
+      for(const cn of corners){const p=cn.clone().project(camera);
+        mx=Math.max(mx,Math.abs(p.x));my=Math.max(my,Math.abs(p.y));}
+      dist*=(Math.max(mx,my)||1)/0.94;             // 讓較長那一邊約佔 94% 邊框
+    }
     scene.background=null;
     grid.visible=false; markers.visible=false; gizmo.visible=false;
     renderer.setPixelRatio(1); renderer.setClearAlpha(0); renderer.setSize(RW,RH,false);
