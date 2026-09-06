@@ -280,10 +280,15 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
   color:var(--dim);font-weight:600}
 #heroKick::before{content:'';width:6px;height:6px;background:var(--ac2);flex:0 0 auto}
-#heroDia{display:block;width:100%;height:auto;max-width:560px;margin:48px 0 15px}
-#heroDia rect,#heroDia .bm circle{fill:none;stroke:var(--dim);stroke-width:1.5}
-#heroDia .pin{fill:var(--ac2)}
-#heroDia .pk{fill:none;stroke:var(--ac2);stroke-width:1.5}
+#heroDia{display:block;width:100%;height:auto;max-width:580px;margin:46px 0 16px;overflow:visible}
+#heroDia .obj{fill:none;stroke:var(--muted);stroke-width:1.5}
+#heroDia .cl{stroke:var(--dim);stroke-width:1;stroke-dasharray:7 3 1.5 3}
+#heroDia .dim{stroke:var(--dim);stroke-width:1}
+#heroDia .arw{fill:var(--dim)}
+#heroDia .dt{fill:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.04em}
+#heroDia .dt-s{fill:var(--dim);font-family:var(--mono);font-size:9.5px;letter-spacing:.04em}
+#heroDia .cal{fill:none;stroke:var(--ac2);stroke-width:1.2}
+#heroDia .ct{fill:var(--ac2);font-family:var(--mono);font-size:11px;letter-spacing:.06em}
 #heroCap{margin:0;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--dim);font-weight:600}
 
@@ -715,19 +720,43 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
     <h1>TrunnionLab<br><em>科技零件工作台</em></h1>
     <p id="homeLede">在瀏覽器裡拼裝樂高相容的科技零件。顯示的模型就是列印的模型——
        公差是建模參數，不是事後補償。完成後直接輸出 STL。</p>
-    <svg id="heroDia" viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g class="bm">
-        <rect x="18" y="87" width="452" height="34" rx="17"/>
-        <circle cx="44" cy="104" r="7"/><circle cx="102" cy="104" r="7"/><circle cx="160" cy="104" r="7"/><circle cx="218" cy="104" r="7"/><circle cx="276" cy="104" r="7"/><circle cx="334" cy="104" r="7"/><circle cx="392" cy="104" r="7"/><circle cx="452" cy="104" r="7"/>
-      </g>
-      <g class="bm" transform="rotate(-20 452 104)">
-        <rect x="428" y="87" width="250" height="34" rx="17"/>
-        <circle cx="452" cy="104" r="7"/><circle cx="510" cy="104" r="7"/><circle cx="568" cy="104" r="7"/><circle cx="626" cy="104" r="7"/>
-      </g>
-      <circle class="pin" cx="452" cy="104" r="7"/>
-      <circle class="pk" cx="452" cy="104" r="13"/>
+    <svg id="heroDia" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line class="cl" x1="40" y1="90" x2="464" y2="90"/>
+      <line class="cl" x1="92" y1="62" x2="92" y2="118"/>
+      <line class="cl" x1="156" y1="62" x2="156" y2="118"/>
+      <line class="cl" x1="220" y1="62" x2="220" y2="118"/>
+      <line class="cl" x1="284" y1="62" x2="284" y2="118"/>
+      <line class="cl" x1="348" y1="62" x2="348" y2="118"/>
+      <line class="cl" x1="412" y1="62" x2="412" y2="118"/>
+      <rect class="obj" x="60" y="59" width="384" height="62" rx="31"/>
+      <circle class="obj" cx="92" cy="90" r="19"/><circle class="obj" cx="156" cy="90" r="19"/><circle class="obj" cx="220" cy="90" r="19"/><circle class="obj" cx="284" cy="90" r="19"/><circle class="obj" cx="348" cy="90" r="19"/><circle class="obj" cx="412" cy="90" r="19"/>
+
+      <line class="dim" x1="60" y1="125" x2="60" y2="182"/>
+      <line class="dim" x1="444" y1="125" x2="444" y2="182"/>
+      <line class="dim" x1="60" y1="176" x2="444" y2="176"/>
+      <polygon class="arw" points="60,176 69,172.5 69,179.5"/>
+      <polygon class="arw" points="444,176 435,172.5 435,179.5"/>
+      <text class="dt" x="252" y="170" text-anchor="middle">48.0</text>
+
+      <line class="dim" x1="92" y1="125" x2="92" y2="158"/>
+      <line class="dim" x1="156" y1="125" x2="156" y2="158"/>
+      <line class="dim" x1="92" y1="152" x2="156" y2="152"/>
+      <polygon class="arw" points="92,152 99,149 99,155"/>
+      <polygon class="arw" points="156,152 149,149 149,155"/>
+      <text class="dt-s" x="124" y="146" text-anchor="middle">8.0</text>
+
+      <line class="dim" x1="446" y1="59" x2="502" y2="59"/>
+      <line class="dim" x1="446" y1="121" x2="502" y2="121"/>
+      <line class="dim" x1="494" y1="59" x2="494" y2="121"/>
+      <polygon class="arw" points="494,59 491,68 497,68"/>
+      <polygon class="arw" points="494,121 491,112 497,112"/>
+      <text class="dt-s" x="506" y="94" text-anchor="start">7.8</text>
+
+      <line class="cal" x1="297" y1="77" x2="330" y2="44"/>
+      <line class="cal" x1="330" y1="44" x2="360" y2="44"/>
+      <text class="ct" x="366" y="48" text-anchor="start">&#8960; 4.85</text>
     </svg>
-    <p id="heroCap">任意角度 · 任意長度 · 直接列印</p>
+    <p id="heroCap">8 mm 格線 · 孔徑公差可調 · 直接輸出 STL</p>
     <div id="acct">
       <div id="acctName">尚未登入<b>專案存在這台裝置</b></div>
       <img id="avatar" alt="">
