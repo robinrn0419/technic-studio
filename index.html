@@ -2778,34 +2778,44 @@ function viewThumb(){
   let url;
   try{
     // 去背：只留零件本身，拿掉底色、格線、孔軸與旋轉盤。
-    // 視角沿用使用者目前方位；迭代收斂距離，讓零件投影後幾乎貼齊邊框。
+    // 視角沿用使用者目前方位；用實際畫出的像素範圍迭代收斂，讓零件填滿整格。
     const sp=Math.sin(cam.phi), cp=Math.cos(cam.phi);
     const dir=V3(sp*Math.cos(cam.theta),sp*Math.sin(cam.theta),cp);
-    const corners=[];
-    for(let i=0;i<8;i++)corners.push(V3(
-      (i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,(i&4)?box.max.z:box.min.z));
     camera.up.set(0,0,1); camera.aspect=asp;
-    let dist=r*2.5;
-    for(let it=0;it<5;it++){
-      camera.position.copy(ctr).addScaledVector(dir,dist);
-      camera.lookAt(ctr);
-      camera.updateMatrixWorld();
-      camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
-      camera.updateProjectionMatrix();
-      let mx=0,my=0;
-      for(const cn of corners){const p=cn.clone().project(camera);
-        mx=Math.max(mx,Math.abs(p.x));my=Math.max(my,Math.abs(p.y));}
-      dist*=(Math.max(mx,my)||1)/0.94;             // 讓較長那一邊約佔 94% 邊框
-    }
     scene.background=null;
     grid.visible=false; markers.visible=false; gizmo.visible=false;
     renderer.setPixelRatio(1); renderer.setClearAlpha(0); renderer.setSize(RW,RH,false);
-    renderer.render(scene,camera);
 
     const src=renderer.domElement;
+    const meas=document.createElement('canvas'); meas.width=RW; meas.height=RH;
+    const mc=meas.getContext('2d');
+    const measure=()=>{
+      mc.clearRect(0,0,RW,RH); mc.drawImage(src,0,0);
+      const d=mc.getImageData(0,0,RW,RH).data;
+      let a=RW,b=0,e=RH,f=0,any=false;
+      for(let y=0;y<RH;y+=2)for(let x=0;x<RW;x+=2){
+        if(d[(y*RW+x)*4+3]>16){any=true;
+          if(x<a)a=x;if(x>b)b=x;if(y<e)e=y;if(y>f)f=y;}}
+      return any?{w:(b-a)/RW,h:(f-e)/RH,cx:(a+b)/2/RW,cy:(e+f)/2/RH}:null;
+    };
+
+    let dist=r*2.4, m=null;
+    for(let it=0;it<4;it++){
+      camera.position.copy(ctr).addScaledVector(dir,dist);
+      camera.lookAt(ctr); camera.updateProjectionMatrix();
+      renderer.render(scene,camera);
+      m=measure(); if(!m)break;
+      const fill=Math.max(m.w,m.h);
+      if(fill>0.9&&fill<0.99)break;
+      dist*=fill/0.95;
+    }
+
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
-    ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);
+    // 把量到的中心對到畫面正中，補掉視角造成的小偏移（限幅避免裁到零件）
+    const cl=(v,k)=>Math.max(-k,Math.min(k,v));
+    const dx=m?cl((0.5-m.cx)*W,0.04*W):0, dy=m?cl((0.5-m.cy)*H,0.04*H):0;
+    ctx.drawImage(src,0,0,src.width,src.height,dx,dy,W,H);
     url=c.toDataURL('image/png');                 // PNG 保留透明背景
   }catch(e){ url=undefined; }
   finally{
@@ -2829,10 +2839,10 @@ addEventListener('beforeunload',saveLocal);
    把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
    雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
 function migrateThumbs(){
-  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='3')return; }catch(e){}
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='4')return; }catch(e){}
   if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
   const list=LocalStore.list();
-  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','3');}catch(e){}};
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','4');}catch(e){}};
   if(!list.length){ doneFlag(); return; }
   const keepName=docName;
   atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
