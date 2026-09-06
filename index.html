@@ -332,6 +332,14 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   transition:color .34s var(--ease)}
 .dlRow:hover .dlIx{color:var(--muted)}
 .dlRow.cur .dlIx{color:var(--acc-t)}
+.dlThumb{flex:0 0 auto;align-self:center;width:72px;height:46px;border-radius:4px;
+  border:1px solid var(--hair);background:var(--view);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .34s var(--ease)}
+.dlRow:hover .dlThumb{border-color:var(--hair-2)}
+.dlThumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dlThumb.none{border-style:dashed}
+.dlThumb.none::after{content:'';width:24px;height:5px;border-radius:2.5px;background:var(--hair-2)}
 .dlMain{flex:1;min-width:0}
 .dlMain b{display:block;font-size:22px;font-weight:500;letter-spacing:-.016em;
   color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -454,6 +462,8 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   #homeBar::after{left:-20px;right:-20px}
   .dlAct{opacity:1;transform:none}
   .dlMain b{font-size:16px}
+  .dlRow{gap:14px}
+  .dlThumb{width:54px;height:36px}
 }
 /* ── 給作者建議 ── */
 #fbWrap{position:fixed;inset:0;z-index:60;display:none;
@@ -2659,7 +2669,8 @@ el('file').onchange=e=>{
    目前存在瀏覽器裡；接上帳號後同一份列表會改由雲端提供，
    因此所有讀寫都集中在 Store 這一層，之後只要換掉它的實作。   */
 const LocalStore=(function(){
-  const IDX='trunnionlab:index', DOC=id=>'trunnionlab:doc:'+id, CUR='trunnionlab:current';
+  const IDX='trunnionlab:index', DOC=id=>'trunnionlab:doc:'+id,
+        THUMB=id=>'trunnionlab:thumb:'+id, CUR='trunnionlab:current';
   const get=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
   const put=(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}};
   const del=k=>{try{localStorage.removeItem(k);}catch(e){}};
@@ -2668,13 +2679,15 @@ const LocalStore=(function(){
   return {
     list(){return index().sort((x,y)=>(y.updated||'').localeCompare(x.updated||''));},
     read(id){return get(DOC(id));},
-    write(id,name,body,nParts){
+    thumb(id){return get(THUMB(id));},
+    write(id,name,body,nParts,thumb){
       if(!put(DOC(id),body))return false;
+      if(thumb!==undefined&&thumb!==null)put(THUMB(id),thumb);
       const a=index(), i=a.findIndex(d=>d.id===id);
       const rec={id:id,name:name,updated:new Date().toISOString(),parts:nParts};
       if(i<0)a.push(rec); else a[i]=rec;
       writeIndex(a);return true;},
-    remove(id){del(DOC(id));writeIndex(index().filter(d=>d.id!==id));},
+    remove(id){del(DOC(id));del(THUMB(id));writeIndex(index().filter(d=>d.id!==id));},
     rename(id,name){const a=index(),d=a.find(x=>x.id===id);
       if(d){d.name=name;writeIndex(a);}
       const body=get(DOC(id));
@@ -2690,7 +2703,8 @@ let _impl = LocalStore;
 const Store = {
   list:()=>_impl.list(),
   read:(id)=>_impl.read(id),
-  write:(id,name,body,n)=>_impl.write(id,name,body,n),
+  thumb:(id)=>_impl.thumb(id),
+  write:(id,name,body,n,thumb)=>_impl.write(id,name,body,n,thumb),
   remove:(id)=>_impl.remove(id),
   rename:(id,name)=>_impl.rename(id,name),
   current:()=>_impl.current(),
@@ -2701,22 +2715,24 @@ const Store = {
 /* CloudStore：與 LocalStore 同介面，背後是 Firestore users/{uid}/projects。
    用 onSnapshot 在本地維持一份快取，讓其餘程式維持同步（非 async）。 */
 const CloudStore=(function(){
-  let uid=null, unsub=null, meta=[], body={};
+  let uid=null, unsub=null, meta=[], body={}, thumbs={};
   function begin(u){
     uid=u; if(unsub)unsub();
     unsub=window.__cloud.watch(uid,rows=>{
       meta=rows.map(r=>({id:r.id,name:r.name,updated:r.updated,parts:r.parts||0}));
-      body={}; rows.forEach(r=>{ body[r.id]=r.body; });
+      body={}; thumbs={};
+      rows.forEach(r=>{ body[r.id]=r.body; if(r.thumb)thumbs[r.id]=r.thumb; });
       if(typeof renderDocs==='function')renderDocs();
     });
   }
-  function end(){ if(unsub)unsub(); unsub=null; uid=null; meta=[]; body={}; }
-  function save(id,name,b,n){
-    const rec={id:id,name:name,updated:new Date().toISOString(),parts:n||0,body:b};
+  function end(){ if(unsub)unsub(); unsub=null; uid=null; meta=[]; body={}; thumbs={}; }
+  function save(id,name,b,n,thumb){
+    const th = (thumb!==undefined&&thumb!==null) ? thumb : (thumbs[id]||null);
+    const rec={id:id,name:name,updated:new Date().toISOString(),parts:n||0,body:b,thumb:th};
     const i=meta.findIndex(d=>d.id===id);
     const m={id:id,name:name,updated:rec.updated,parts:rec.parts};
     if(i<0)meta.push(m); else meta[i]=m;
-    body[id]=b;
+    body[id]=b; if(th)thumbs[id]=th;
     window.__cloud.put(uid,id,rec).catch(e=>toast('雲端儲存失敗：'+(e&&e.message||e),true));
     return true;
   }
@@ -2724,8 +2740,9 @@ const CloudStore=(function(){
     _begin:begin, _end:end,
     list(){return meta.slice().sort((x,y)=>(y.updated||'').localeCompare(x.updated||''));},
     read(id){return body[id]||null;},
-    write(id,name,b,n){return save(id,name,b,n);},
-    remove(id){ meta=meta.filter(d=>d.id!==id); delete body[id];
+    thumb(id){return thumbs[id]||null;},
+    write(id,name,b,n,thumb){return save(id,name,b,n,thumb);},
+    remove(id){ meta=meta.filter(d=>d.id!==id); delete body[id]; delete thumbs[id];
       window.__cloud.del(uid,id).catch(e=>toast('雲端刪除失敗：'+(e&&e.message||e),true)); },
     rename(id,name){ const d=meta.find(x=>x.id===id); let b=body[id];
       if(b){try{const o=JSON.parse(b);o.name=name;b=JSON.stringify(o);}catch(e){}}
@@ -2738,9 +2755,27 @@ const CloudStore=(function(){
 const newId=()=>'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 let docId=null, saveTimer=null;
 
+/* 目前這一格畫面截成縮圖：明確 render 一次再抓，免得 WebGL
+   的繪圖緩衝已被清空。只在工作台、且場景有零件時才截。 */
+function viewThumb(){
+  try{
+    if(atHome||!parts.length||typeof renderer==='undefined')return undefined;
+    renderer.render(scene,camera);
+    const src=renderer.domElement, W=256, H=160;
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle=(getComputedStyle(document.body).getPropertyValue('--view')||'#2b2d33').trim();
+    ctx.fillRect(0,0,W,H);
+    const sr=src.width/src.height, dr=W/H; let sw,sh,sx,sy;
+    if(sr>dr){ sh=src.height; sw=sh*dr; sx=(src.width-sw)/2; sy=0; }
+    else     { sw=src.width;  sh=sw/dr; sx=0; sy=(src.height-sh)/2; }
+    ctx.drawImage(src,sx,sy,sw,sh,0,0,W,H);
+    return c.toDataURL('image/jpeg',0.62);
+  }catch(e){ return undefined; }
+}
 function saveLocal(){
   if(!docId)return;
-  Store.write(docId,docName,envelope(),parts.length);
+  Store.write(docId,docName,envelope(),parts.length,viewThumb());
   Store.setCurrent(docId);
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveLocal,800);}
@@ -2783,12 +2818,16 @@ function renderDocs(){
     const row=document.createElement('div');
     row.className='dlRow'+(d.id===docId?' cur':'');
     row.innerHTML='<span class="dlIx"></span>'+
+      '<div class="dlThumb"></div>'+
       '<div class="dlMain"><b></b><span></span></div>'+
       '<div class="dlAct">'+
       '<button data-a="rn">改名</button>'+
       '<button data-a="dl">下載</button>'+
       '<button data-a="rm">刪除</button></div>';
     row.querySelector('.dlIx').textContent=String(i+1).padStart(2,'0');
+    const th=Store.thumb(d.id), tw=row.querySelector('.dlThumb');
+    if(th){ const im=new Image(); im.alt=''; im.decoding='async'; im.src=th; tw.appendChild(im); }
+    else { tw.classList.add('none'); }
     row.querySelector('b').textContent=d.name||'未命名';
     row.querySelector('.dlMain span').textContent=
       String(d.parts||0).padStart(2,'0')+' 零件   ·   '+fmtTime(d.updated)+
@@ -2902,7 +2941,8 @@ async function cloudMigrate(){
   try{ localStorage.setItem('trunnionlab:migrated','1'); }catch(e){}
   if(!ok)return;
   let n=0;
-  mine.forEach(m=>{ const b=LocalStore.read(m.id); if(b){ CloudStore.write(m.id,m.name,b,m.parts); n++; } });
+  mine.forEach(m=>{ const b=LocalStore.read(m.id);
+    if(b){ CloudStore.write(m.id,m.name,b,m.parts,LocalStore.thumb(m.id)); n++; } });
   toast('已複製 '+n+' 個專案到帳號。');
 }
 function onCloudAuth(user){
