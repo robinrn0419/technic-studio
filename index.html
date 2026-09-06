@@ -239,6 +239,96 @@ body.show-intro #empty{display:flex!important}
 .intro .tm{font-size:10px;color:var(--dim);opacity:.75;line-height:1.7;margin:10px 0 0}
 #empty.err .intro{border-color:#a8564d}
 #empty.err h2{color:#e0685f}
+/* ── 對話框（取代被瀏覽器封鎖的 prompt / confirm） ── */
+#askWrap{position:fixed;inset:0;z-index:80;display:none;
+  background:rgba(10,11,13,.74);backdrop-filter:blur(3px)}
+#askWrap.on{display:flex;align-items:center;justify-content:center}
+#askCard{width:min(420px,calc(100vw - 32px));background:var(--panel);
+  border:1px solid var(--hair-2);border-radius:8px;padding:30px 30px 22px}
+#askCard h4{margin:0 0 6px;font-size:19px;font-weight:500;letter-spacing:-.012em}
+#askBody{margin:0 0 22px;font-size:13px;line-height:1.8;color:var(--muted)}
+#askBody:empty{display:none}
+#askLab{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+#askInput{width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);
+  border:0;border-bottom:1px solid var(--hair-2);padding:9px 2px;
+  font:15px var(--sans);outline:none;transition:border-color .24s var(--ease)}
+#askInput:focus{border-color:var(--acc)}
+#askRow{display:flex;gap:4px;justify-content:flex-end;margin-top:30px}
+#askRow button{padding:8px 14px}
+/* ── 主頁 ── */
+#home{position:fixed;inset:0;z-index:50;display:none;background:var(--bg);overflow:auto}
+#home.on{display:block}
+body.home .chrome,body.home .dock,body.home #stage,
+body.home .viewbar,body.home .actionbar,body.home .foot,body.home #fbBtn{display:none}
+
+#homeIn{--gut:76px;max-width:1020px;margin:0 auto;padding:0 40px 140px}
+#homeTop{padding:104px 0 0;position:relative}
+#homeTop h1{margin:0;font-size:clamp(40px,7vw,78px);font-weight:600;
+  letter-spacing:-.035em;line-height:.96;max-width:13ch}
+#homeTop h1 em{display:block;font-style:normal;font-size:.44em;font-weight:500;
+  letter-spacing:-.01em;color:var(--dim);margin-top:.18em}
+#homeLede{margin:34px 0 0;max-width:46ch;font-size:13.5px;line-height:1.85;color:var(--muted)}
+
+/* 帳號：吊在標題右上，不參與主要左緣 */
+#acct{position:absolute;top:104px;right:0;display:flex;align-items:center;gap:11px}
+#acctName{font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);text-align:right;line-height:1.8}
+#acctName b{display:block;font-size:11.5px;letter-spacing:.01em;
+  text-transform:none;color:var(--text);font-weight:500}
+#avatar{width:28px;height:28px;border-radius:50%;background:var(--raise);
+  border:1px solid var(--hair);object-fit:cover;display:none}
+
+/* 通欄細線，從版面左右滿出去 */
+#homeBar{margin-top:96px;display:flex;align-items:baseline;gap:16px;padding-bottom:14px;
+  position:relative}
+#homeBar::after{content:'';position:absolute;left:-40px;right:-40px;bottom:0;
+  height:1px;background:var(--hair-2)}
+#homeBar h2{margin:0;font-family:var(--mono);font-size:9px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--text);font-weight:400}
+#homeBar .sp{flex:1}
+#homeCount{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--dim)}
+
+#dlList{margin-bottom:0}
+.dlEmpty{margin:64px 0 0;max-width:42ch;font-size:13.5px;color:var(--muted);line-height:1.95}
+
+.dlRow{position:relative;display:flex;align-items:baseline;gap:20px;
+  padding:22px 0 20px var(--gut);border-bottom:1px solid var(--hair);cursor:pointer;
+  transition:background .34s var(--ease),padding-left .34s var(--ease)}
+.dlRow:hover{background:var(--raise);padding-left:calc(var(--gut) + 8px)}
+/* 索引編號吊在左緣之外 */
+.dlIx{position:absolute;left:0;top:24px;font-family:var(--mono);font-size:10px;
+  font-variant-numeric:tabular-nums;letter-spacing:.14em;color:var(--dim);
+  transition:color .34s var(--ease)}
+.dlRow:hover .dlIx{color:var(--muted)}
+.dlRow.cur .dlIx{color:var(--acc-t)}
+.dlMain{flex:1;min-width:0}
+.dlMain b{display:block;font-size:19px;font-weight:500;letter-spacing:-.012em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlMain span{display:block;margin-top:9px;font-family:var(--mono);font-size:9px;
+  font-variant-numeric:tabular-nums;letter-spacing:.16em;color:var(--dim)}
+.dlAct{display:flex;gap:3px;opacity:0;transform:translateX(6px);
+  transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.dlRow:hover .dlAct{opacity:1;transform:none}
+.dlAct button{font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);background:transparent;border:0;
+  border-radius:0;padding:7px 9px;cursor:pointer;transition:color .2s}
+.dlAct button:hover{color:var(--text)}
+
+#homeFoot{display:flex;gap:6px;padding-top:26px}
+@media (prefers-reduced-motion:reduce){
+  .dlRow,.dlIx,.dlAct{transition:none}
+}
+@media (max-width:760px){
+  #homeIn{--gut:44px;padding:0 20px 96px}
+  #homeTop{padding-top:64px}
+  #acct{position:static;margin-top:34px;justify-content:flex-start}
+  #acctName{text-align:left}
+  #homeBar{margin-top:60px}
+  #homeBar::after{left:-20px;right:-20px}
+  .dlAct{opacity:1;transform:none}
+  .dlMain b{font-size:16px}
+}
 /* ── 給作者建議 ── */
 #fbBtn{position:fixed;right:12px;bottom:44px;z-index:16;
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
@@ -252,7 +342,7 @@ body.show-intro #empty{display:flex!important}
 #fbWrap.on{display:flex;align-items:center;justify-content:center}
 #fbCard{width:min(520px,calc(100vw - 32px));background:var(--panel);
   border:1px solid var(--hair);border-radius:8px;padding:26px 26px 20px;
-  box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  box-shadow:0 1px 0 var(--hair-2) inset, 0 18px 44px rgba(0,0,0,.42)}
 #fbCard h3{margin:0 0 4px;font-size:17px;font-weight:600;letter-spacing:.01em}
 #fbCard .sub{margin:0 0 18px;font-size:12px;color:var(--muted);line-height:1.7}
 #fbCard label{display:block;font-family:var(--mono);font-size:9px;
@@ -298,7 +388,7 @@ body.show-intro #empty{display:flex!important}
 <div class="chrome">
   <div class="mark">
     <h1>TrunnionLab 科技零件工作台</h1>
-    <p>TrunnionLab</p>
+    <p>TrunnionLab · <span id="docName">未命名</span></p>
   </div>
   <div class="stats">
     <div><span class="v" id="cnt">0</span><span class="k">零件</span></div>
@@ -306,6 +396,7 @@ body.show-intro #empty{display:flex!important}
     <div><span class="v" id="scnt">0</span><span class="k">空孔</span></div>
   </div>
   <div class="tools">
+    <button class="quiet" id="btnDocs" title="回到主頁">主頁</button>
     <button class="quiet" id="undo" disabled title="復原 Ctrl+Z"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h7a3.5 3.5 0 010 7H6"/><path d="M6 4L3 7l3 3"/></svg></button>
     <button class="quiet" id="save" title="存檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8"/><path d="M5 7l3 3 3-3"/><path d="M2.5 13h11"/></svg></button>
     <button class="quiet" id="load" title="讀檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V3"/><path d="M5 6l3-3 3 3"/><path d="M2.5 13h11"/></svg></button>
@@ -464,6 +555,36 @@ body.show-intro #empty{display:flex!important}
 </div>
 <div id="angBadge"></div>
 <div id="toast"></div>
+<div id="askWrap"><div id="askCard">
+  <h4 id="askTitle"></h4>
+  <p id="askBody"></p>
+  <label id="askLab" for="askInput"></label>
+  <input id="askInput" type="text" autocomplete="off">
+  <div id="askRow">
+    <button class="quiet" id="askNo">取消</button>
+    <button class="ink" id="askYes">確定</button>
+  </div>
+</div></div>
+<div id="home"><div id="homeIn">
+  <div id="homeTop">
+    <h1>TrunnionLab<br><em>科技零件工作台</em></h1>
+    <p id="homeLede">在瀏覽器裡拼裝樂高相容的科技零件。顯示的模型就是列印的模型——
+       公差是建模參數，不是事後補償。完成後直接輸出 STL。</p>
+    <div id="acct">
+      <div id="acctName">尚未登入<b>專案存在這台裝置</b></div>
+      <img id="avatar" alt="">
+      <button class="quiet" id="btnAuth">登入</button>
+    </div>
+  </div>
+  <div id="homeBar">
+    <h2>我的專案</h2><div class="sp"></div><span id="homeCount"></span>
+  </div>
+  <div id="dlList"></div>
+  <div id="homeFoot">
+    <button class="ink" id="dlNew">新專案</button>
+    <button class="quiet" id="dlImport">匯入 JSON</button>
+  </div>
+</div></div>
 <button id="fbBtn">給作者一個建議</button>
 <div id="fbWrap"><div id="fbCard">
   <h3>給作者一個建議</h3>
@@ -2232,14 +2353,241 @@ addEventListener('keydown',e=>{
 function dl(blob,name){
   const u=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),4000);}
-el('save').onclick=()=>dl(new Blob([snapshot()],{type:'application/json'}),'technic-build.json');
+/* ── 存檔 ──
+   檔案格式外面包一層信封，帶版本號與名稱；
+   scene 內容就是 snapshot() 的原樣，之後接雲端可直接沿用。   */
+const FILE_VER=1;
+let docName='未命名';
+
+function envelope(){
+  return JSON.stringify({app:'trunnionlab',ver:FILE_VER,
+    name:docName,savedAt:new Date().toISOString(),
+    scene:JSON.parse(snapshot())});
+}
+// 舊檔（直接是 snapshot 內容）也讀得進來
+function openEnvelope(txt){
+  const o=JSON.parse(txt);
+  if(o&&o.app==='trunnionlab'&&o.scene){
+    if(o.ver>FILE_VER)throw new Error('這個檔案來自更新版本的網站');
+    docName=o.name||'未命名';
+    return JSON.stringify(o.scene);
+  }
+  if(o&&Array.isArray(o.parts))return txt;      // 舊格式
+  throw new Error('看起來不是這個網站的檔案');
+}
+const safeName=n=>(n||'未命名').replace(/[\\/:*?"<>|]/g,'-').slice(0,60);
+function setDocName(n){docName=n||'未命名';
+  const t=el('docName'); if(t)t.textContent=docName;}
+
+el('save').onclick=async()=>{
+  const n=await Ask.text('下載這份設計','檔名',docName);
+  if(n===null)return;
+  setDocName(n.trim()||'未命名');
+  saveLocal();
+  dl(new Blob([envelope()],{type:'application/json'}),safeName(docName)+'.json');
+  toast('已下載 '+safeName(docName)+'.json');
+};
 el('load').onclick=()=>el('file').click();
 el('file').onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{try{pushHistory();restore(r.result);fitView();}
-                catch(err){alert('讀檔失敗：'+err.message);}};
+  r.onload=()=>{try{const scene=openEnvelope(r.result);
+                    saveLocal();                       // 先保住目前這份
+                    docId=newId();                     // 匯入的檔案成為新專案
+                    pushHistory();restore(scene);setDocName(docName);fitView();
+                    saveLocal();toast('已匯入「'+docName+'」');
+                    if(atHome)enterWorkbench(null);}
+                catch(err){toast('讀檔失敗：'+err.message);}};
   r.readAsText(f);e.target.value='';};
+
+/* ── 專案庫 ──
+   目前存在瀏覽器裡；接上帳號後同一份列表會改由雲端提供，
+   因此所有讀寫都集中在 Store 這一層，之後只要換掉它的實作。   */
+const Store=(function(){
+  const IDX='trunnionlab:index', DOC=id=>'trunnionlab:doc:'+id, CUR='trunnionlab:current';
+  const get=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+  const put=(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}};
+  const del=k=>{try{localStorage.removeItem(k);}catch(e){}};
+  function index(){try{return JSON.parse(get(IDX)||'[]');}catch(e){return [];}}
+  function writeIndex(a){put(IDX,JSON.stringify(a));}
+  return {
+    list(){return index().sort((x,y)=>(y.updated||'').localeCompare(x.updated||''));},
+    read(id){return get(DOC(id));},
+    write(id,name,body,nParts){
+      if(!put(DOC(id),body))return false;
+      const a=index(), i=a.findIndex(d=>d.id===id);
+      const rec={id:id,name:name,updated:new Date().toISOString(),parts:nParts};
+      if(i<0)a.push(rec); else a[i]=rec;
+      writeIndex(a);return true;},
+    remove(id){del(DOC(id));writeIndex(index().filter(d=>d.id!==id));},
+    rename(id,name){const a=index(),d=a.find(x=>x.id===id);
+      if(d){d.name=name;writeIndex(a);}
+      const body=get(DOC(id));
+      if(body){try{const o=JSON.parse(body);o.name=name;put(DOC(id),JSON.stringify(o));}catch(e){}}},
+    current(){return get(CUR);},
+    setCurrent(id){put(CUR,id);}
+  };
+})();
+
+const newId=()=>'d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let docId=null, saveTimer=null;
+
+function saveLocal(){
+  if(!docId)return;
+  Store.write(docId,docName,envelope(),parts.length);
+  Store.setCurrent(docId);
+}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveLocal,800);}
+addEventListener('beforeunload',saveLocal);
+
+function newDoc(name){
+  saveLocal();
+  docId=newId();setDocName(name||'未命名');
+  pushHistory();restore(JSON.stringify({nextId:1,spawnN:0,parts:[]}));
+  saveLocal();fitView();
+}
+function openDoc(id){
+  saveLocal();
+  const body=Store.read(id);
+  if(!body){toast('找不到這個專案');return false;}
+  try{const scene=openEnvelope(body);
+      docId=id;pushHistory();restore(scene);setDocName(docName);
+      Store.setCurrent(id);return true;}
+  catch(err){toast('開啟失敗：'+err.message);return false;}
+}
+
+/* ── 專案面板 ── */
+function fmtTime(iso){
+  if(!iso)return '';
+  const d=new Date(iso), n=new Date(), ms=n-d;
+  if(ms<60000)return '剛剛';
+  if(ms<3600000)return Math.floor(ms/60000)+' 分鐘前';
+  if(d.toDateString()===n.toDateString())
+    return '今天 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return (d.getMonth()+1)+'/'+d.getDate();
+}
+function renderDocs(){
+  const box=el('dlList'), a=Store.list(), cnt=el('homeCount');
+  if(cnt)cnt.textContent=a.length?String(a.length).padStart(2,'0')+' 份':'';
+  if(!a.length){box.innerHTML='<p class="dlEmpty">還沒有任何專案。'+
+    '按下方的「新專案」開始，或把之前存下的 JSON 檔匯入回來。</p>';return;}
+  box.innerHTML='';
+  a.forEach((d,i)=>{
+    const row=document.createElement('div');
+    row.className='dlRow'+(d.id===docId?' cur':'');
+    row.innerHTML='<span class="dlIx"></span>'+
+      '<div class="dlMain"><b></b><span></span></div>'+
+      '<div class="dlAct">'+
+      '<button data-a="rn">改名</button>'+
+      '<button data-a="dl">下載</button>'+
+      '<button data-a="rm">刪除</button></div>';
+    row.querySelector('.dlIx').textContent=String(i+1).padStart(2,'0');
+    row.querySelector('b').textContent=d.name||'未命名';
+    row.querySelector('.dlMain span').textContent=
+      String(d.parts||0).padStart(2,'0')+' 零件   ·   '+fmtTime(d.updated)+
+      (d.id===docId?'   ·   上次開啟':'');
+    row.onclick=()=>enterWorkbench(d.id);
+    row.querySelectorAll('.dlAct button').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const act=b.dataset.a;
+      if(act==='rn'){Ask.text('重新命名','名稱',d.name).then(n=>{
+        if(n===null)return; Store.rename(d.id,n.trim()||'未命名');
+        if(d.id===docId)setDocName(n.trim()||'未命名'); renderDocs();});}
+      else if(act==='dl'){const body=Store.read(d.id);
+        if(body)dl(new Blob([body],{type:'application/json'}),safeName(d.name)+'.json');}
+      else if(act==='rm'){
+        Ask.confirm('刪除「'+(d.name||'未命名')+'」',
+                    '這份專案會從這台裝置移除，無法復原。','刪除').then(ok=>{
+          if(!ok)return;
+          Store.remove(d.id);
+          if(d.id===docId)docId=null;
+          renderDocs();});}
+    });
+    box.appendChild(row);
+  });
+}
+/* ── 對話框 ──
+   sandbox 化的 iframe 會封鎖 prompt/confirm 並靜靜回傳 null，
+   所以一律走頁面內的對話框。   */
+const Ask=(function(){
+  let done=null;
+  const wrap=()=>el('askWrap');
+  function close(v){const w=wrap();w.classList.remove('on');
+    const f=done;done=null;if(f)f(v);}
+  function open(o){
+    return new Promise(res=>{
+      done=res;
+      el('askTitle').textContent=o.title||'';
+      el('askBody').textContent=o.body||'';
+      const lab=el('askLab'), inp=el('askInput');
+      if(o.input){lab.style.display='';inp.style.display='';
+        lab.textContent=o.label||'名稱';inp.value=o.value||'';}
+      else {lab.style.display='none';inp.style.display='none';}
+      el('askYes').textContent=o.yes||'確定';
+      el('askYes').className=o.danger?'':'ink';
+      wrap().classList.add('on');
+      if(o.input)setTimeout(()=>{inp.focus();inp.select();},40);
+    });
+  }
+  addEventListener('DOMContentLoaded',()=>{});
+  el('askNo').onclick=()=>close(null);
+  el('askYes').onclick=()=>close(el('askInput').style.display==='none'
+    ? true : el('askInput').value);
+  el('askInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();close(el('askInput').value);}
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close(null);}
+  });
+  wrap().addEventListener('mousedown',e=>{if(e.target===wrap())close(null);});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&wrap().classList.contains('on')){
+      e.stopPropagation();close(null);}
+  },true);
+  return {
+    text:(title,label,value)=>open({title,label,value,input:true}),
+    confirm:(title,body,yes)=>open({title,body,yes,danger:true})
+  };
+})();
+
+/* ── 主頁 ↔ 工作台 ── */
+let atHome=true;
+function showHome(){
+  saveLocal();
+  atHome=true;
+  document.body.classList.add('home');
+  el('home').classList.add('on');
+  renderDocs();
+}
+function enterWorkbench(id){
+  if(id&&!openDoc(id))return;
+  atHome=false;
+  document.body.classList.remove('home');
+  el('home').classList.remove('on');
+  resize();refresh();fitView();
+}
+el('btnDocs').onclick=showHome;
+el('dlNew').onclick=async()=>{
+  const n=await Ask.text('新專案','名稱','未命名');
+  if(n===null)return; newDoc(n.trim()||'未命名'); enterWorkbench(null);};
+el('dlImport').onclick=()=>el('file').click();
+
+/* ── 帳號 ──
+   還沒接上 Firebase，先維持未登入狀態。
+   接上之後只要改寫 setAuthState 與按鈕行為即可。   */
+function setAuthState(user){
+  const n=el('acctName'), av=el('avatar'), b=el('btnAuth');
+  if(user){
+    n.innerHTML='已登入<b></b>';
+    n.querySelector('b').textContent=user.name||user.email||'';
+    if(user.photo){av.src=user.photo;av.style.display='block';}
+    b.textContent='登出';
+  }else{
+    n.innerHTML='尚未登入<b>專案存在這台裝置</b>';
+    av.style.display='none';av.removeAttribute('src');
+    b.textContent='登入';
+  }
+}
+el('btnAuth').onclick=()=>toast('帳號系統還沒接上，專案目前存在這台裝置。');
+setAuthState(null);
 
 /* ── 給作者建議 ── */
 // 到 https://web3forms.com 用你的 Gmail 免費申請，把拿到的 Access Key 貼在這裡。
@@ -2453,10 +2801,17 @@ el('expParts').onclick=()=>{
              catch(e){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); } }
     },i*350);});};
 
+// 每次場景變動後排程自動保存（節流 800ms）
+(function(){const _r=refresh;
+  refresh=function(){_r.apply(this,arguments);
+    if(typeof scheduleSave==='function')scheduleSave();};})();
+
 resize();setView('iso');refresh();
+showHome();
 // 側孔需要布林運算，先在背景把模組載起來
 loadManifold().then(()=>{
   parts.forEach(buildMeshes);layout();refresh();
+  saveLocal();
 }).catch(()=>{
   toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
 });
