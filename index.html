@@ -40,7 +40,7 @@
   --hair:rgba(255,255,255,.08); --hair-2:rgba(255,255,255,.16);
   --text:#dfe1e5; --muted:#8d929b; --dim:#5c616b;
   --view:#2b2d33;
-  --acc:#4a80d9; --acc-t:#7ab0ff;
+  --acc:#4a80d9; --acc-t:#7ab0ff; --ac2:#f2c11c;
   --ax-x:#e05a50; --ax-y:#7cb648; --ax-z:#5590d9;
   --sans:'Inter','Noto Sans TC',system-ui,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,monospace;
@@ -276,6 +276,17 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   letter-spacing:-.005em;color:var(--muted);margin-top:.3em}
 #homeLede{margin:30px 0 0;max-width:44ch;font-size:15px;line-height:1.8;color:var(--muted)}
 
+#heroKick{display:flex;align-items:center;gap:9px;margin:0 0 24px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);font-weight:600}
+#heroKick::before{content:'';width:6px;height:6px;background:var(--ac2);flex:0 0 auto}
+#heroDia{display:block;width:100%;height:auto;max-width:560px;margin:48px 0 15px}
+#heroDia rect,#heroDia .bm circle{fill:none;stroke:var(--dim);stroke-width:1.5}
+#heroDia .pin{fill:var(--ac2)}
+#heroDia .pk{fill:none;stroke:var(--ac2);stroke-width:1.5}
+#heroCap{margin:0;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);font-weight:600}
+
 /* 帳號：吊在標題右上，不參與主要左緣 */
 #acct{position:absolute;top:104px;right:0;display:flex;align-items:center;gap:11px}
 #acctName{font-family:var(--mono);font-size:9px;letter-spacing:.16em;
@@ -354,10 +365,10 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
 #howto .sub{margin:12px 0 0;max-width:44ch;font-size:14px;line-height:1.8;color:var(--muted)}
 #howto ol{list-style:none;margin:52px 0 0;padding:0;counter-reset:st}
 #howto li{counter-increment:st;position:relative;padding:0 0 42px}
-#howto li::before{content:counter(st,decimal-leading-zero);position:absolute;
-  left:calc(-1 * var(--gut));top:0;
-  font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums;
-  letter-spacing:.02em;color:var(--dim);font-weight:400}
+#howto li::before{content:counter(st,decimal-leading-zero);display:block;
+  margin-bottom:10px;font-family:var(--mono);font-size:12px;
+  font-variant-numeric:tabular-nums;letter-spacing:.18em;
+  color:var(--ac2);font-weight:600}
 #howto li b{display:block;font-size:19px;font-weight:500;letter-spacing:-.015em;color:var(--text)}
 #howto li p{margin:12px 0 0;max-width:52ch;font-size:14px;line-height:1.95;color:var(--muted)}
 #howto>button{font-family:var(--mono);font-size:9px;
@@ -383,7 +394,7 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   text-transform:uppercase;color:var(--dim);font-weight:600}
 #credit b{display:block;margin-top:11px;font-family:var(--sans);font-size:20px;
   font-weight:500;letter-spacing:-.016em;text-transform:none;color:var(--text)}
-#credit b::after{content:'.';color:var(--acc-t)}
+#credit b::after{content:'.';color:var(--ac2)}
 #build{margin:16px 0 0;font-family:var(--mono);font-size:9px;
   letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 
@@ -700,9 +711,23 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
 </div></div>
 <div id="home"><div id="homeIn">
   <div id="homeTop">
+    <p id="heroKick">瀏覽器內建模 · 免安裝 · 免註冊</p>
     <h1>TrunnionLab<br><em>科技零件工作台</em></h1>
     <p id="homeLede">在瀏覽器裡拼裝樂高相容的科技零件。顯示的模型就是列印的模型——
        公差是建模參數，不是事後補償。完成後直接輸出 STL。</p>
+    <svg id="heroDia" viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g class="bm">
+        <rect x="18" y="87" width="452" height="34" rx="17"/>
+        <circle cx="44" cy="104" r="7"/><circle cx="102" cy="104" r="7"/><circle cx="160" cy="104" r="7"/><circle cx="218" cy="104" r="7"/><circle cx="276" cy="104" r="7"/><circle cx="334" cy="104" r="7"/><circle cx="392" cy="104" r="7"/><circle cx="452" cy="104" r="7"/>
+      </g>
+      <g class="bm" transform="rotate(-20 452 104)">
+        <rect x="428" y="87" width="250" height="34" rx="17"/>
+        <circle cx="452" cy="104" r="7"/><circle cx="510" cy="104" r="7"/><circle cx="568" cy="104" r="7"/><circle cx="626" cy="104" r="7"/>
+      </g>
+      <circle class="pin" cx="452" cy="104" r="7"/>
+      <circle class="pk" cx="452" cy="104" r="13"/>
+    </svg>
+    <p id="heroCap">任意角度 · 任意長度 · 直接列印</p>
     <div id="acct">
       <div id="acctName">尚未登入<b>專案存在這台裝置</b></div>
       <img id="avatar" alt="">
