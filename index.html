@@ -527,6 +527,7 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   <div class="tools">
     <button class="quiet" id="btnDocs" title="回到主頁">主頁</button>
     <button class="quiet" id="undo" disabled title="復原 Ctrl+Z"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h7a3.5 3.5 0 010 7H6"/><path d="M6 4L3 7l3 3"/></svg></button>
+    <button class="quiet" id="redo" disabled title="重做 Ctrl+Shift+Z"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13 7H6a3.5 3.5 0 000 7h4"/><path d="M10 4l3 3-3 3"/></svg></button>
     <button class="quiet" id="save" title="存檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8"/><path d="M5 7l3 3 3-3"/><path d="M2.5 13h11"/></svg></button>
     <button class="quiet" id="load" title="讀檔"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V3"/><path d="M5 6l3-3 3 3"/><path d="M2.5 13h11"/></svg></button>
     <input type="file" id="file" accept=".json" style="display:none">
@@ -1506,7 +1507,7 @@ function faceToward(p,h,dir){
 }
 
 /* ── 歷程 ── */
-let history=[];
+let history=[],future=[];
 function snapshot(){
   return JSON.stringify({nextId:nextId,spawnN:spawnN,parts:parts.map(p=>{
     const free=(p.obj.parent===world)&&!p.link;
@@ -1521,7 +1522,8 @@ function snapshot(){
 let histLock=false;
 function popHistory(){ if(history.length)history.pop(); }
 function pushHistory(){
-  if(histLock)return;history.push(snapshot());if(history.length>60)history.shift();}
+  if(histLock)return;history.push(snapshot());if(history.length>60)history.shift();
+  future.length=0;}                        // 新動作一出現，原本的「重做」就不再成立
 function restore(json){
   const s=JSON.parse(json);
   while(world.children.length)world.remove(world.children[0]);
@@ -1545,7 +1547,12 @@ function restore(json){
   nextId=s.nextId;spawnN=s.spawnN;selPart=null;sel=[];
   layout();refresh();
 }
-function undo(){if(!history.length)return;restore(history.pop());refresh();}
+function undo(){if(!history.length)return;
+  future.push(snapshot());if(future.length>60)future.shift();
+  restore(history.pop());refresh();}
+function redo(){if(!future.length)return;
+  history.push(snapshot());if(history.length>60)history.shift();
+  restore(future.pop());refresh();}
 
 /* ── 接合 ── */
 function applyLink(root){
@@ -2483,6 +2490,7 @@ function refresh(){
   el('expFused').disabled=!parts.length;
   el('expParts').disabled=!parts.length;
   el('undo').disabled=history.length===0;
+  el('redo').disabled=future.length===0;
 }
 
 /* ── 控制 ── */
@@ -2561,6 +2569,7 @@ el('layerUp').onclick=()=>setLayer(1);
 el('layerDown').onclick=()=>setLayer(-1);
 el('del').onclick=()=>removePart(selPart);
 el('undo').onclick=undo;
+el('redo').onclick=redo;
 ['cbd','cbh'].forEach(id=>{el(id).onchange=()=>{
   parts.forEach(buildMeshes);layout();refresh();};});
 
@@ -2605,10 +2614,12 @@ el('fit').onclick=fitView;
 
 addEventListener('keydown',e=>{
   if(/INPUT|TEXTAREA/.test((e.target.tagName||'')))return;
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
+    e.preventDefault();e.shiftKey?redo():undo();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return;}
   if(e.key==='Escape'){closePops();selPart=null;sel=[];refresh();}
   else if(e.key==='Delete'||e.key==='Backspace'){if(selPart){e.preventDefault();removePart(selPart);}}
-  else if(e.key.toLowerCase()==='f')fitView();
+  else if(e.key.toLowerCase()==='f'){if(ghost===null)fitView();}   // 放置零件時 F 專門用來翻面
   else if(e.key==='1')setView('iso');
   else if(e.key==='2')setView('top');
   else if(e.key==='3')setView('front');
