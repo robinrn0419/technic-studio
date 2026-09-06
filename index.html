@@ -2691,6 +2691,7 @@ const LocalStore=(function(){
     list(){return index().sort((x,y)=>(y.updated||'').localeCompare(x.updated||''));},
     read(id){return get(DOC(id));},
     thumb(id){return get(THUMB(id));},
+    putThumb(id,thumb){if(thumb)put(THUMB(id),thumb);},   // 只換縮圖，不動索引時間
     write(id,name,body,nParts,thumb){
       if(!put(DOC(id),body))return false;
       if(thumb!==undefined&&thumb!==null)put(THUMB(id),thumb);
@@ -2813,6 +2814,33 @@ function saveLocal(){
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveLocal,800);}
 addEventListener('beforeunload',saveLocal);
+
+/* 舊版縮圖是直接裁當下視窗，改成依模型大小取景後，
+   把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
+   雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
+function migrateThumbs(){
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='2')return; }catch(e){}
+  if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
+  const list=LocalStore.list();
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','2');}catch(e){}};
+  if(!list.length){ doneFlag(); return; }
+  const keepName=docName;
+  atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
+  try{
+    list.forEach(m=>{
+      const body=LocalStore.read(m.id); if(!body)return;
+      try{
+        restore(openEnvelope(body));
+        const th=viewThumb();
+        if(th)LocalStore.putThumb(m.id,th);
+      }catch(e){}
+    });
+  }finally{
+    try{ restore(JSON.stringify({nextId:1,spawnN:0,parts:[]})); }catch(e){}
+    atHome=true; docName=keepName;
+    doneFlag();
+  }
+}
 
 function newDoc(name){
   saveLocal();
@@ -3266,6 +3294,9 @@ loadManifold().then(()=>{
   saveLocal();
 }).catch(()=>{
   toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
+}).finally(()=>{
+  migrateThumbs();                 // 等側孔幾何就緒後再重截既有縮圖
+  if(atHome&&typeof renderDocs==='function')renderDocs();
 });
 (function loop(){requestAnimationFrame(loop);
   if(markDirty){markDirty=false;rebuildMarkers();}
