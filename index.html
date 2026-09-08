@@ -2794,28 +2794,34 @@ function viewThumb(){
       const d=mc.getImageData(0,0,RW,RH).data;
       let a=RW,b=0,e=RH,f=0,any=false;
       for(let y=0;y<RH;y+=2)for(let x=0;x<RW;x+=2){
-        if(d[(y*RW+x)*4+3]>16){any=true;
+        if(d[(y*RW+x)*4+3]>12){any=true;
           if(x<a)a=x;if(x>b)b=x;if(y<e)e=y;if(y>f)f=y;}}
-      return any?{w:(b-a)/RW,h:(f-e)/RH,cx:(a+b)/2/RW,cy:(e+f)/2/RH}:null;
+      return any?{x0:a,y0:e,x1:b,y1:f,w:(b-a)/RW,h:(f-e)/RH}:null;
     };
 
-    let dist=r*2.4, m=null;
-    for(let it=0;it<4;it++){
+    // 目標：較長那一邊約佔 86%，四邊一定留白，整個零件都看得到。
+    let dist=r*2.6, m=null;
+    for(let it=0;it<6;it++){
       camera.position.copy(ctr).addScaledVector(dir,dist);
       camera.lookAt(ctr); camera.updateProjectionMatrix();
       renderer.render(scene,camera);
       m=measure(); if(!m)break;
       const fill=Math.max(m.w,m.h);
-      if(fill>0.9&&fill<0.99)break;
-      dist*=fill/0.95;
+      const clipped=m.x0<3||m.y0<3||m.x1>RW-3||m.y1>RH-3;
+      if(!clipped&&fill>0.80&&fill<0.90)break;
+      dist*=(clipped?Math.max(fill,1.02):fill)/0.86;
+    }
+    // 保險：收斂後若還貼邊，再退一步，寧可小一點也要整個零件入鏡
+    if(m&&(m.x0<3||m.y0<3||m.x1>RW-3||m.y1>RH-3)){
+      dist*=1.18;
+      camera.position.copy(ctr).addScaledVector(dir,dist);
+      camera.lookAt(ctr); camera.updateProjectionMatrix();
+      renderer.render(scene,camera);
     }
 
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
-    // 把量到的中心對到畫面正中，補掉視角造成的小偏移（限幅避免裁到零件）
-    const cl=(v,k)=>Math.max(-k,Math.min(k,v));
-    const dx=m?cl((0.5-m.cx)*W,0.04*W):0, dy=m?cl((0.5-m.cy)*H,0.04*H):0;
-    ctx.drawImage(src,0,0,src.width,src.height,dx,dy,W,H);
+    ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);   // 不位移，避免裁到零件
     url=c.toDataURL('image/png');                 // PNG 保留透明背景
   }catch(e){ url=undefined; }
   finally{
@@ -2839,10 +2845,10 @@ addEventListener('beforeunload',saveLocal);
    把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
    雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
 function migrateThumbs(){
-  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='4')return; }catch(e){}
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='5')return; }catch(e){}
   if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
   const list=LocalStore.list();
-  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','4');}catch(e){}};
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','5');}catch(e){}};
   if(!list.length){ doneFlag(); return; }
   const keepName=docName;
   atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
