@@ -2778,52 +2778,37 @@ function viewThumb(){
   let url;
   try{
     // 去背：只留零件本身，拿掉底色、格線、孔軸與旋轉盤。
-    // 從斜上方看，孔和厚度都看得到；把零件較長的水平軸轉到畫面左右，
-    // 長條零件才鋪得滿又不會上下被裁。
+    // 用正投影相機（沒有透視變形），把外框剛好框進畫面，整個零件一定看得到。
+    // 從斜上方看得到孔和厚度；零件較長的水平軸轉到畫面左右。
     const size=box.getSize(V3());
     const th=((size.x>=size.y)?-Math.PI/2:0)+0.32, ph=0.72;
     const sp=Math.sin(ph), cp=Math.cos(ph);
     const dir=V3(sp*Math.cos(th),sp*Math.sin(th),cp);
-    camera.up.set(0,0,1); camera.aspect=asp;
     scene.background=null;
     grid.visible=false; markers.visible=false; gizmo.visible=false;
     renderer.setPixelRatio(1); renderer.setClearAlpha(0); renderer.setSize(RW,RH,false);
     const src=renderer.domElement;
-    const place=()=>{camera.position.copy(ctr).addScaledVector(dir,dist);
-      camera.lookAt(ctr);camera.updateMatrixWorld();
-      camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
-      camera.updateProjectionMatrix();};
 
-    // 先用外框角投影收斂距離，讓外框幾乎貼齊邊框。
-    const corners=[];
-    for(let i=0;i<8;i++)corners.push(V3(
-      (i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,(i&4)?box.max.z:box.min.z));
-    let dist=r*2.6;
-    for(let it=0;it<5;it++){
-      place();
-      let ex=0,ey=0;
-      for(const q of corners){const p=q.clone().project(camera);
-        ex=Math.max(ex,Math.abs(p.x));ey=Math.max(ey,Math.abs(p.y));}
-      dist*=Math.max(ex,ey,0.01)/0.99;
+    const oc=new THREE.OrthographicCamera(-1,1,1,-1,0.01,r*40+1000);
+    oc.up.set(0,0,1);
+    oc.position.copy(ctr).addScaledVector(dir,r*6+50);
+    oc.lookAt(ctr); oc.updateMatrixWorld();
+    const rt=V3().setFromMatrixColumn(oc.matrixWorld,0);
+    const upv=V3().setFromMatrixColumn(oc.matrixWorld,1);
+    let hu=0,hv=0;
+    for(let i=0;i<8;i++){
+      const rel=V3((i&1)?box.max.x:box.min.x,(i&2)?box.max.y:box.min.y,(i&4)?box.max.z:box.min.z).sub(ctr);
+      hu=Math.max(hu,Math.abs(rel.dot(rt))); hv=Math.max(hv,Math.abs(rel.dot(upv)));
     }
-    // 再照實際畫出來的像素檢查：只要有一邊被裁，就退一步重畫（最多幾次）。
-    const meas=document.createElement('canvas'); meas.width=RW; meas.height=RH;
-    const mctx=meas.getContext('2d');
-    for(let it=0;it<4;it++){
-      place(); renderer.render(scene,camera);
-      mctx.clearRect(0,0,RW,RH); mctx.drawImage(src,0,0);
-      const d=mctx.getImageData(0,0,RW,RH).data;
-      let x0=RW,y0=RH,x1=0,y1=0,any=false;
-      for(let y=0;y<RH;y+=2)for(let x=0;x<RW;x+=2){
-        if(d[(y*RW+x)*4+3]>10){any=true;
-          if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}
-      if(!any||(x0>4&&y0>4&&x1<RW-4&&y1<RH-4))break;
-      dist*=1.13;
-    }
+    hu/=0.9; hv/=0.9;                       // 四邊各留約 10% 空白
+    if(hu/hv<asp) hu=hv*asp; else hv=hu/asp;
+    oc.left=-hu; oc.right=hu; oc.top=hv; oc.bottom=-hv;
+    oc.updateProjectionMatrix();
+    renderer.render(scene,oc);
 
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d');
-    ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);   // 不位移，避免裁到零件
+    ctx.drawImage(src,0,0,src.width,src.height,0,0,W,H);
     url=c.toDataURL('image/png');                 // PNG 保留透明背景
   }catch(e){ url=undefined; }
   finally{
@@ -2847,10 +2832,10 @@ addEventListener('beforeunload',saveLocal);
    把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
    雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
 function migrateThumbs(){
-  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='9')return; }catch(e){}
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='10')return; }catch(e){}
   if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
   const list=LocalStore.list();
-  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','9');}catch(e){}};
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','10');}catch(e){}};
   if(!list.length){ doneFlag(); return; }
   const keepName=docName;
   atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
