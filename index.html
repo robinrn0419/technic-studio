@@ -260,10 +260,17 @@ body.show-intro #empty{display:flex!important}
 #askRow{display:flex;gap:4px;justify-content:flex-end;margin-top:30px}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
-#home{position:fixed;inset:0;z-index:50;display:none;background:var(--bg);overflow:auto}
-#home.on{display:block}
+#home{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;
+  opacity:0;visibility:hidden;transform:scale(1.014);
+  transition:opacity .34s var(--ease),transform .34s var(--ease),visibility 0s .34s}
+#home.on{opacity:1;visibility:visible;transform:none;
+  transition:opacity .42s var(--ease),transform .42s var(--ease),visibility 0s}
 body.home .chrome,body.home .dock,body.home #stage,
 body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
+body:not(.home) .chrome{animation:tl-drop .4s var(--ease) both}
+body:not(.home) .dock{animation:tl-slide .42s var(--ease) both}
+@keyframes tl-drop{from{transform:translateY(-100%)}to{transform:none}}
+@keyframes tl-slide{from{transform:translateX(-100%)}to{transform:none}}
 
 #homeIn{--gut:40px;--pad:40px;max-width:860px;margin:0 auto;padding:0 var(--pad) 130px}
 /* 一條左緣貫穿全頁；編號吊在它左邊的空欄裡 */
@@ -550,7 +557,7 @@ button:active:not(:disabled){transform:translateY(.5px) scale(.985)}
     stroke-dashoffset:0!important}}
 </style>
 </head>
-<body>
+<body class="home">
 
 <div id="stage"></div>
 
@@ -1474,8 +1481,31 @@ function applyCam(){
                       cam.target.z+cam.dist*cp);
   camera.up.set(0,0,1);camera.lookAt(cam.target);
 }
+/* 相機補間：fitView / 視角切換用滑順過場，拖曳與滾輪維持即時 */
+let camAnim=null;
+const REDUCE_MO=(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+function tweenCam(to,dur){
+  if(REDUCE_MO){camAnim=null;cam.theta=to.theta;cam.phi=to.phi;cam.dist=to.dist;
+    cam.target.copy(to.target);applyCam();return;}
+  camAnim={a:{theta:cam.theta,phi:cam.phi,dist:cam.dist,target:cam.target.clone()},
+           b:{theta:to.theta,phi:to.phi,dist:to.dist,target:to.target.clone()},
+           t0:performance.now(),dur:dur||520};
+}
+function stepCam(){
+  if(!camAnim)return;
+  const p=Math.min(1,(performance.now()-camAnim.t0)/camAnim.dur);
+  const e=1-Math.pow(1-p,3);
+  const a=camAnim.a,b=camAnim.b;
+  let dth=b.theta-a.theta; dth=((dth%(2*Math.PI))+3*Math.PI)%(2*Math.PI)-Math.PI;
+  cam.theta=a.theta+dth*e; cam.phi=a.phi+(b.phi-a.phi)*e;
+  cam.dist=a.dist+(b.dist-a.dist)*e;
+  cam.target.lerpVectors(a.target,b.target,e);
+  applyCam();
+  if(p>=1)camAnim=null;
+}
 const VIEWS={iso:[-0.92,1.0],top:[-Math.PI/2,0.02],front:[-Math.PI/2,Math.PI/2]};
-function setView(k){const v=VIEWS[k];if(!v)return;cam.theta=v[0];cam.phi=v[1];applyCam();
+function setView(k){const v=VIEWS[k];if(!v)return;
+  tweenCam({theta:v[0],phi:v[1],dist:cam.dist,target:cam.target.clone()},460);
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===k));}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 
@@ -2189,6 +2219,7 @@ cv.addEventListener('dblclick',e=>{
 });
 
 cv.addEventListener('pointerdown',e=>{
+  camAnim=null;                                  // 動手就停下補間
   if(ghost!==null&&e.button===0){
     e.preventDefault();
     if(overTrash(e))cancelGhost(); else commitGhost();
@@ -2331,10 +2362,10 @@ cv.addEventListener('pointerup',e=>{
   if(wasGizmo)refresh();
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('wheel',e=>{e.preventDefault();
+cv.addEventListener('wheel',e=>{e.preventDefault();camAnim=null;
   cam.dist=Math.max(25,Math.min(2000,cam.dist*(1+Math.sign(e.deltaY)*0.12)));applyCam();
 },{passive:false});
-cv.addEventListener('touchstart',e=>{if(e.touches.length===2){drag=null;
+cv.addEventListener('touchstart',e=>{if(e.touches.length===2){drag=null;camAnim=null;
   pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
                    e.touches[0].clientY-e.touches[1].clientY);}},{passive:true});
 cv.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinch){
@@ -2645,11 +2676,15 @@ el('genTest').onclick=()=>{
         vals.map((v,i)=>'　第 '+(i+1)+' 孔　'+label+' '+v.toFixed(2)+' mm').join('\n'));
 };
 
-function fitView(){
-  if(!parts.length){cam.target.set(0,0,0);cam.dist=210;applyCam();return;}
-  const box=new THREE.Box3().setFromObject(world);
-  cam.target.copy(box.getCenter(V3()));
-  cam.dist=Math.max(60,box.getSize(V3()).length()*1.8);applyCam();}
+function fitView(instant){
+  let tgt=V3(), d=210;
+  if(parts.length){
+    const box=new THREE.Box3().setFromObject(world);
+    tgt.copy(box.getCenter(V3()));
+    d=Math.max(60,box.getSize(V3()).length()*1.8);
+  }
+  if(instant){camAnim=null;cam.target.copy(tgt);cam.dist=d;applyCam();return;}
+  tweenCam({theta:cam.theta,phi:cam.phi,dist:d,target:tgt},480);}
 el('fit').onclick=fitView;
 
 addEventListener('keydown',e=>{
@@ -3012,20 +3047,22 @@ const Ask=(function(){
 })();
 
 /* ── 主頁 ↔ 工作台 ── */
-let atHome=true;
+let atHome=true, _homeT=null;
 function showHome(){
   saveLocal();
   atHome=true;
-  document.body.classList.add('home');
-  el('home').classList.add('on');
+  clearTimeout(_homeT);
   renderDocs();
+  el('home').classList.add('on');                     // 主頁淡入蓋住工作台
+  _homeT=setTimeout(()=>document.body.classList.add('home'),380);  // 淡入完才收掉工作台
 }
 function enterWorkbench(id){
   if(id&&!openDoc(id))return;
   atHome=false;
-  document.body.classList.remove('home');
-  el('home').classList.remove('on');
-  resize();refresh();fitView();
+  clearTimeout(_homeT);
+  document.body.classList.remove('home');             // 工作台先現身
+  el('home').classList.remove('on');                  // 主頁在它上面淡出
+  resize();refresh();fitView(true);
 }
 el('btnDocs').onclick=showHome;
 el('dlNew').onclick=async()=>{
@@ -3356,7 +3393,7 @@ loadManifold().then(()=>{
 });
 (function loop(){requestAnimationFrame(loop);
   if(markDirty){markDirty=false;rebuildMarkers();}
-  updateGizmo();placeSelPanel();
+  stepCam();updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
 })();
 </script>
