@@ -2778,9 +2778,12 @@ function viewThumb(){
   let url;
   try{
     // 去背：只留零件本身，拿掉底色、格線、孔軸與旋轉盤。
-    // 視角沿用使用者目前方位；用實際畫出的像素範圍迭代收斂，讓零件填滿整格。
-    const sp=Math.sin(cam.phi), cp=Math.cos(cam.phi);
-    const dir=V3(sp*Math.cos(cam.theta),sp*Math.sin(cam.theta),cp);
+    // 視角：讓零件較長的水平軸朝畫面左右，長條件才鋪得滿又不會上下被裁；
+    // 稍微偏個角度露出立體感。再用實際像素範圍迭代收斂。
+    const size=box.getSize(V3());
+    const th=((size.x>=size.y)?-Math.PI/2:0)+0.36, ph=1.06;
+    const sp=Math.sin(ph), cp=Math.cos(ph);
+    const dir=V3(sp*Math.cos(th),sp*Math.sin(th),cp);
     camera.up.set(0,0,1); camera.aspect=asp;
     scene.background=null;
     grid.visible=false; markers.visible=false; gizmo.visible=false;
@@ -2799,17 +2802,17 @@ function viewThumb(){
       return any?{x0:a,y0:e,x1:b,y1:f,w:(b-a)/RW,h:(f-e)/RH}:null;
     };
 
-    // 目標：較長那一邊約佔 86%，四邊一定留白，整個零件都看得到。
+    // 目標：較長那一邊約佔 90%，四邊一定留白，整個零件都看得到。
     let dist=r*2.6, m=null;
-    for(let it=0;it<6;it++){
+    for(let it=0;it<7;it++){
       camera.position.copy(ctr).addScaledVector(dir,dist);
       camera.lookAt(ctr); camera.updateProjectionMatrix();
       renderer.render(scene,camera);
       m=measure(); if(!m)break;
       const fill=Math.max(m.w,m.h);
       const clipped=m.x0<3||m.y0<3||m.x1>RW-3||m.y1>RH-3;
-      if(!clipped&&fill>0.80&&fill<0.90)break;
-      dist*=(clipped?Math.max(fill,1.02):fill)/0.86;
+      if(!clipped&&fill>0.84&&fill<0.94)break;
+      dist*=(clipped?Math.max(fill,1.02):fill)/0.90;
     }
     // 保險：收斂後若還貼邊，再退一步，寧可小一點也要整個零件入鏡
     if(m&&(m.x0<3||m.y0<3||m.x1>RW-3||m.y1>RH-3)){
@@ -2845,10 +2848,10 @@ addEventListener('beforeunload',saveLocal);
    把本機既有專案的縮圖在啟動時重截一次（每台裝置只做一次）。
    雲端專案不在這裡處理，各自下次開啟存檔時就會更新。 */
 function migrateThumbs(){
-  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='5')return; }catch(e){}
+  try{ if(localStorage.getItem('trunnionlab:thumbframe')==='6')return; }catch(e){}
   if(_impl!==LocalStore||!atHome||docId)return;   // 只在主頁、沒開專案時做；否則留待下次
   const list=LocalStore.list();
-  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','5');}catch(e){}};
+  const doneFlag=()=>{try{localStorage.setItem('trunnionlab:thumbframe','6');}catch(e){}};
   if(!list.length){ doneFlag(); return; }
   const keepName=docName;
   atHome=false;                             // 讓 viewThumb 願意截圖（docId 已確定是 null）
