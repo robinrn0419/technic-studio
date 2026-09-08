@@ -79,7 +79,7 @@ button{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--text);
   background:var(--raise);border:1px solid transparent;border-radius:var(--r);
   padding:7px 12px;cursor:pointer;letter-spacing:.02em;white-space:nowrap;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  transition:background .22s var(--ease),border-color .22s var(--ease),color .22s var(--ease)}
+  transition:background .22s var(--ease),border-color .22s var(--ease),color .22s var(--ease),transform .13s var(--ease)}
 button:hover:not(:disabled){background:var(--hover)}
 button:disabled{opacity:.28;cursor:not-allowed}
 button:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
@@ -504,7 +504,50 @@ body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
   .actionbar{left:8px;right:8px;transform:none;max-width:none;
     flex-direction:column;align-items:stretch;gap:12px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ── 進場動畫 ── */
+@keyframes tl-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tl-fade{from{opacity:0}to{opacity:1}}
+@keyframes tl-draw{to{stroke-dashoffset:0}}
+
+#home.on #homeIn>*{animation:tl-rise .6s var(--ease) both}
+#home.on #homeIn>*:nth-child(2){animation-delay:.06s}
+#home.on #homeIn>*:nth-child(3){animation-delay:.12s}
+#home.on #homeIn>*:nth-child(4){animation-delay:.17s}
+#home.on #homeIn>*:nth-child(5){animation-delay:.22s}
+#home.on #homeIn>*:nth-child(6){animation-delay:.27s}
+
+/* hero 工程圖：線條自己畫出來 */
+#home.on #heroDia rect.obj{stroke-dasharray:1000;stroke-dashoffset:1000;
+  animation:tl-draw .85s var(--ease) .22s forwards}
+#home.on #heroDia circle.obj{stroke-dasharray:126;stroke-dashoffset:126;
+  animation:tl-draw .5s var(--ease) both}
+#home.on #heroDia circle.obj:nth-of-type(1){animation-delay:.5s}
+#home.on #heroDia circle.obj:nth-of-type(2){animation-delay:.57s}
+#home.on #heroDia circle.obj:nth-of-type(3){animation-delay:.64s}
+#home.on #heroDia circle.obj:nth-of-type(4){animation-delay:.71s}
+#home.on #heroDia circle.obj:nth-of-type(5){animation-delay:.78s}
+#home.on #heroDia circle.obj:nth-of-type(6){animation-delay:.85s}
+#home.on #heroDia .dim{stroke-dasharray:1400;stroke-dashoffset:1400;
+  animation:tl-draw .55s var(--ease) 1s forwards}
+#home.on #heroDia .cal{stroke-dasharray:200;stroke-dashoffset:200;
+  animation:tl-draw .45s var(--ease) 1.3s forwards}
+#home.on #heroDia .cl{opacity:0;animation:tl-fade .5s ease .12s forwards}
+#home.on #heroDia .arw,#home.on #heroDia .dt,#home.on #heroDia .dt-s,#home.on #heroDia .ct{
+  opacity:0;animation:tl-fade .4s ease 1.35s forwards}
+
+/* 專案列表：逐列浮現 */
+#dlList .dlRow{animation:tl-rise .5s var(--ease) both}
+#dlList .dlRow:nth-child(2){animation-delay:.05s}
+#dlList .dlRow:nth-child(3){animation-delay:.1s}
+#dlList .dlRow:nth-child(4){animation-delay:.15s}
+#dlList .dlRow:nth-child(n+5){animation-delay:.2s}
+
+button:active:not(:disabled){transform:translateY(.5px) scale(.985)}
+.rail button:active:not(:disabled),.viewbar button:active:not(:disabled){transform:scale(.94)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}
+  *,#home.on #homeIn>*,#home.on #heroDia *{animation:none!important;opacity:1!important;
+    stroke-dashoffset:0!important}}
 </style>
 </head>
 <body>
