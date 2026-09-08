@@ -154,10 +154,13 @@ kbd{font-family:var(--mono);font-size:9px;color:var(--dim);border:1px solid var(
 .note code{font-family:var(--mono);color:var(--acc-t);font-size:11px}
 
 /* ── 選取零件面板 ── */
-.selpanel{position:fixed;z-index:18;display:none;width:280px;right:10px;
+.selpanel{position:fixed;z-index:18;width:280px;right:10px;
   top:calc(var(--top) + 8px);
   background:var(--panel);border:1px solid var(--hair-2);border-radius:8px;
-  box-shadow:0 14px 40px rgba(0,0,0,.5);padding:16px 18px 18px}
+  box-shadow:0 14px 40px rgba(0,0,0,.5);padding:16px 18px 18px;
+  opacity:0;transform:translateX(12px) scale(.98);transform-origin:top right;
+  pointer-events:none;transition:opacity .24s var(--ease),transform .28s var(--ease)}
+.selpanel.show{opacity:1;transform:none;pointer-events:auto}
 .selpanel .hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--hair)}
 .selpanel .hd .nm{font-size:14px;font-weight:600}
@@ -1464,13 +1467,36 @@ const SIDE={side:THREE.DoubleSide,roughness:.6};
 const MATS={};
 function matFor(c){if(!MATS[c])MATS[c]=new THREE.MeshStandardMaterial(Object.assign({color:c},SIDE));return MATS[c];}
 const MAT_BRACE=new THREE.MeshStandardMaterial(Object.assign({color:0xd4d6d9},SIDE));
-const MAT_SEL=new THREE.MeshStandardMaterial(Object.assign({color:0x4a80d9},SIDE));
+const MAT_SEL=new THREE.MeshStandardMaterial(Object.assign({color:0x4a80d9,emissive:0x4a80d9,emissiveIntensity:0.16},SIDE));
 const MAT_GHOST=new THREE.MeshStandardMaterial(Object.assign(
   {color:0x6fa8f5,transparent:true,opacity:0.45,depthWrite:false},SIDE));
 const MAT_GHOST_FREE=new THREE.MeshStandardMaterial(Object.assign(
   {color:0x8d8f94,transparent:true,opacity:0.28,depthWrite:false},SIDE));
 const partMat=p=>p.pending?(p.link?MAT_GHOST:MAT_GHOST_FREE)
   :(p.kind==='brace'?MAT_BRACE:matFor(DEFS[p.defKey].col));
+
+const REDUCE_MO=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+
+/* ── 接合／放下的漣漪回饋（獨立網格，不碰零件狀態） ── */
+const RING_GEO=new THREE.RingGeometry(0.62,1,40);
+const pulses=[];
+function pulseAt(pos,axis){
+  if(REDUCE_MO||!pos)return;
+  const m=new THREE.Mesh(RING_GEO,new THREE.MeshBasicMaterial(
+    {color:0x7ab0ff,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}));
+  m.position.copy(pos);
+  if(axis)m.quaternion.setFromUnitVectors(V3(0,0,1),axis.clone().normalize());
+  m.renderOrder=990; scene.add(m);
+  pulses.push({m,t0:performance.now(),dur:440});
+}
+function stepPulses(){
+  for(let i=pulses.length-1;i>=0;i--){
+    const a=pulses[i],p=Math.min(1,(performance.now()-a.t0)/a.dur),e=1-Math.pow(1-p,2);
+    a.m.scale.setScalar(1.2+e*9);
+    a.m.material.opacity=.55*(1-p);
+    if(p>=1){scene.remove(a.m);a.m.material.dispose();pulses.splice(i,1);}
+  }
+}
 
 /* ── 相機 ── */
 const cam={theta:-0.92,phi:1.0,dist:210,target:V3()};
@@ -1483,7 +1509,6 @@ function applyCam(){
 }
 /* 相機補間：fitView / 視角切換用滑順過場，拖曳與滾輪維持即時 */
 let camAnim=null;
-const REDUCE_MO=(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 function tweenCam(to,dur){
   if(REDUCE_MO){camAnim=null;cam.theta=to.theta;cam.phi=to.phi;cam.dist=to.dist;
     cam.target.copy(to.target);applyCam();return;}
@@ -1687,6 +1712,7 @@ function doJoin(){
   used.add(rB.link.hostId+':'+rB.link.hostSocket);
   used.add(rB.link.viaId+':'+rB.link.viaSocket);
   applyLink(rB);selPart=rB.id;sel=[];layout();refresh();
+  const wj=holeWorld(pA,s0.hole);pulseAt(wj.pos,wj.axis);
 }
 /* 連續接合：接完之後把選取移到新零件的下一個空孔，
    這樣可以「挑零件→挑零件→挑零件」一路接下去 */
@@ -1868,11 +1894,14 @@ function commitGhost(){
   if(g.link){used.add(g.link.hostId+':'+g.link.hostSocket);
              used.add(g.link.viaId+':'+g.link.viaSocket);}
   else g.layer=Math.round(g.obj.position.z/TH);
+  const hostLink=g.link&&byId(g.link.hostId);
   ghost=null;ghostSnap=null;selPart=g.id;sel=[];
   el('ghosthint').style.display='none';
   el('trash').classList.remove('on','open');
   if(parts.length===1)fitView();
   layout();refresh();
+  if(hostLink){const s=socketWorld(g,g.link.viaSocket);pulseAt(s.pos,s.axis);}
+  else pulseAt(g.obj.getWorldPosition(V3()),V3(0,0,1));
   return true;
 }
 function cancelGhost(){
@@ -2489,7 +2518,7 @@ function syncSliders(){
 const selpanel=el('selpanel');
 function placeSelPanel(){
   const p=selPart?byId(selPart):null, t=rotTarget();
-  selpanel.style.display=(p&&t)?'block':'none';
+  selpanel.classList.toggle('show',!!(p&&t));
 }
 
 function refresh(){
@@ -3393,7 +3422,8 @@ loadManifold().then(()=>{
 });
 (function loop(){requestAnimationFrame(loop);
   if(markDirty){markDirty=false;rebuildMarkers();}
-  stepCam();updateGizmo();placeSelPanel();
+  stepCam();stepPulses();updateGizmo();placeSelPanel();
+  if(selPart&&!REDUCE_MO)MAT_SEL.emissiveIntensity=0.16+0.10*Math.sin(performance.now()*0.0042);
   renderer.render(scene,camera);})();
 })();
 </script>
