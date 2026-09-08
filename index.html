@@ -71,7 +71,8 @@ body.pinned .viewbar{left:calc(var(--rail) + var(--fly) + 10px)}
 .tools{display:flex;align-items:center;gap:6px}
 .stats{display:flex;gap:14px;padding:0 14px;margin-right:2px;border-right:1px solid var(--hair)}
 .stats div{display:flex;align-items:baseline;gap:6px}
-.stats .v{font-family:var(--mono);font-weight:300;font-size:16px;letter-spacing:-.02em}
+.stats .v{font-family:var(--mono);font-weight:300;font-size:16px;letter-spacing:-.02em;
+  display:inline-block;transform-origin:left center}
 .stats .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:600}
 
 /* ── 控制項 ── */
@@ -203,11 +204,14 @@ input[type=range]:disabled{opacity:.25}
 .viewbar button:hover{background:var(--raise);color:var(--text)}
 .viewbar button.on{color:var(--acc-t);background:rgba(74,128,217,.15)}
 
-.actionbar{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:17;
-  display:none;align-items:center;gap:20px;
+.actionbar{position:fixed;left:50%;bottom:12px;z-index:17;
+  display:flex;align-items:center;gap:20px;
   background:var(--panel);border:1px solid var(--hair-2);border-radius:8px;
   box-shadow:0 14px 40px rgba(0,0,0,.5);padding:12px 12px 12px 18px;
-  max-width:min(620px,92vw)}
+  max-width:min(620px,92vw);
+  opacity:0;transform:translateX(-50%) translateY(24px) scale(.95);pointer-events:none;
+  transition:opacity .3s var(--ease),transform .38s var(--ease)}
+.actionbar.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
 .actionbar .msg{font-family:var(--mono);font-size:10.5px;font-weight:300;color:var(--muted);
   line-height:1.8;letter-spacing:.02em}
 .actionbar .msg b{font-size:17px;color:var(--text);letter-spacing:-.01em}
@@ -264,14 +268,24 @@ body.show-intro #empty{display:flex!important}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
 #home{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;
-  opacity:0;visibility:hidden;transform:scale(1.014);
-  transition:opacity .34s var(--ease),transform .34s var(--ease),visibility 0s .34s}
-#home.on{opacity:1;visibility:visible;transform:none;
-  transition:opacity .42s var(--ease),transform .42s var(--ease),visibility 0s}
+  opacity:0;visibility:hidden;transform:scale(1.035);filter:blur(6px);
+  transition:opacity .5s var(--ease),transform .5s var(--ease),filter .5s var(--ease),visibility 0s .5s}
+#home.on{opacity:1;visibility:visible;transform:none;filter:none;
+  transition:opacity .6s var(--ease),transform .62s var(--ease),filter .5s var(--ease),visibility 0s}
 body.home .chrome,body.home .dock,body.home #stage,
 body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
-body:not(.home) .chrome{animation:tl-drop .4s var(--ease) both}
-body:not(.home) .dock{animation:tl-slide .42s var(--ease) both}
+body:not(.home) .chrome{animation:tl-drop .58s var(--ease) both}
+body:not(.home) .dock{animation:tl-slide .6s var(--ease) .06s both}
+body:not(.home) .viewbar{animation:tl-rise .6s var(--ease) .22s both}
+body:not(.home) .stats>div{animation:tl-rise .55s var(--ease) both}
+body:not(.home) .stats>div:nth-child(2){animation-delay:.07s}
+body:not(.home) .stats>div:nth-child(3){animation-delay:.14s}
+body:not(.home) .tools>*{animation:tl-rise .5s var(--ease) both}
+body:not(.home) .tools>*:nth-child(2){animation-delay:.04s}
+body:not(.home) .tools>*:nth-child(3){animation-delay:.08s}
+body:not(.home) .tools>*:nth-child(4){animation-delay:.12s}
+body:not(.home) .tools>*:nth-child(5){animation-delay:.16s}
+body:not(.home) .tools>*:nth-child(n+6){animation-delay:.2s}
 @keyframes tl-drop{from{transform:translateY(-100%)}to{transform:none}}
 @keyframes tl-slide{from{transform:translateX(-100%)}to{transform:none}}
 
@@ -511,49 +525,64 @@ body:not(.home) .dock{animation:tl-slide .42s var(--ease) both}
   body.pinned #stage{left:var(--rail)}
   #popTol{left:10px;right:10px;width:auto}
   .selpanel{left:10px;right:10px;width:auto;top:auto;bottom:56px}
-  .actionbar{left:8px;right:8px;transform:none;max-width:none;
+  .actionbar{left:8px;right:8px;transform:translateY(24px);max-width:none;
     flex-direction:column;align-items:stretch;gap:12px}
+  .actionbar.show{transform:none}
 }
 /* ── 進場動畫 ── */
-@keyframes tl-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tl-rise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
 @keyframes tl-fade{from{opacity:0}to{opacity:1}}
-@keyframes tl-draw{to{stroke-dashoffset:0}}
+@keyframes tl-draw{from{stroke-dashoffset:var(--dl,1400)}to{stroke-dashoffset:0}}
+@keyframes tl-wipe{from{clip-path:inset(0 100% -10% 0)}to{clip-path:inset(0 -2% -10% 0)}}
 
-#home.on #homeIn>*{animation:tl-rise .6s var(--ease) both}
-#home.on #homeIn>*:nth-child(2){animation-delay:.06s}
-#home.on #homeIn>*:nth-child(3){animation-delay:.12s}
-#home.on #homeIn>*:nth-child(4){animation-delay:.17s}
-#home.on #homeIn>*:nth-child(5){animation-delay:.22s}
-#home.on #homeIn>*:nth-child(6){animation-delay:.27s}
+#home.on #homeIn>*{animation:tl-rise 1s var(--ease) both}
+#home.on #homeIn>*:nth-child(2){animation-delay:.16s}
+#home.on #homeIn>*:nth-child(3){animation-delay:.3s}
+#home.on #homeIn>*:nth-child(4){animation-delay:.42s}
+#home.on #homeIn>*:nth-child(5){animation-delay:.54s}
+#home.on #homeIn>*:nth-child(6){animation-delay:.66s}
+
+#home.on #homeTop h1{animation:tl-wipe 1.15s var(--ease) .12s both}
 
 /* hero 工程圖：線條自己畫出來 */
-#home.on #heroDia rect.obj{stroke-dasharray:1000;stroke-dashoffset:1000;
-  animation:tl-draw .85s var(--ease) .22s forwards}
-#home.on #heroDia circle.obj{stroke-dasharray:126;stroke-dashoffset:126;
-  animation:tl-draw .5s var(--ease) both}
-#home.on #heroDia circle.obj:nth-of-type(1){animation-delay:.5s}
-#home.on #heroDia circle.obj:nth-of-type(2){animation-delay:.57s}
-#home.on #heroDia circle.obj:nth-of-type(3){animation-delay:.64s}
-#home.on #heroDia circle.obj:nth-of-type(4){animation-delay:.71s}
-#home.on #heroDia circle.obj:nth-of-type(5){animation-delay:.78s}
-#home.on #heroDia circle.obj:nth-of-type(6){animation-delay:.85s}
-#home.on #heroDia .dim{stroke-dasharray:1400;stroke-dashoffset:1400;
-  animation:tl-draw .55s var(--ease) 1s forwards}
-#home.on #heroDia .cal{stroke-dasharray:200;stroke-dashoffset:200;
-  animation:tl-draw .45s var(--ease) 1.3s forwards}
-#home.on #heroDia .cl{opacity:0;animation:tl-fade .5s ease .12s forwards}
+#home.on #heroDia .cl{opacity:0;animation:tl-fade .55s ease both}
+#home.on #heroDia .cl:nth-of-type(1){animation-delay:.28s;animation-duration:.9s}
+#home.on #heroDia .cl:nth-of-type(2){animation-delay:.4s}
+#home.on #heroDia .cl:nth-of-type(3){animation-delay:.48s}
+#home.on #heroDia .cl:nth-of-type(4){animation-delay:.56s}
+#home.on #heroDia .cl:nth-of-type(5){animation-delay:.64s}
+#home.on #heroDia .cl:nth-of-type(6){animation-delay:.72s}
+#home.on #heroDia .cl:nth-of-type(7){animation-delay:.8s}
+#home.on #heroDia rect.obj{--dl:1000;stroke-dasharray:1000;stroke-dashoffset:1000;
+  animation:tl-draw 1.4s var(--ease) .6s forwards}
+#home.on #heroDia circle.obj{--dl:126;stroke-dasharray:126;stroke-dashoffset:126;
+  animation:tl-draw .65s var(--ease) both}
+#home.on #heroDia circle.obj:nth-of-type(1){animation-delay:1s}
+#home.on #heroDia circle.obj:nth-of-type(2){animation-delay:1.13s}
+#home.on #heroDia circle.obj:nth-of-type(3){animation-delay:1.26s}
+#home.on #heroDia circle.obj:nth-of-type(4){animation-delay:1.39s}
+#home.on #heroDia circle.obj:nth-of-type(5){animation-delay:1.52s}
+#home.on #heroDia circle.obj:nth-of-type(6){animation-delay:1.65s}
+#home.on #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
+  animation:tl-draw 1s var(--ease) 2s forwards}
+#home.on #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
+  animation:tl-draw .7s var(--ease) 2.6s forwards}
 #home.on #heroDia .arw,#home.on #heroDia .dt,#home.on #heroDia .dt-s,#home.on #heroDia .ct{
-  opacity:0;animation:tl-fade .4s ease 1.35s forwards}
+  opacity:0;animation:tl-rise .55s var(--ease) 2.75s forwards}
 
 /* 專案列表：逐列浮現 */
-#dlList .dlRow{animation:tl-rise .5s var(--ease) both}
-#dlList .dlRow:nth-child(2){animation-delay:.05s}
-#dlList .dlRow:nth-child(3){animation-delay:.1s}
-#dlList .dlRow:nth-child(4){animation-delay:.15s}
-#dlList .dlRow:nth-child(n+5){animation-delay:.2s}
+#dlList .dlRow{animation:tl-rise .75s var(--ease) both}
+#dlList .dlRow:nth-child(2){animation-delay:.09s}
+#dlList .dlRow:nth-child(3){animation-delay:.18s}
+#dlList .dlRow:nth-child(4){animation-delay:.27s}
+#dlList .dlRow:nth-child(5){animation-delay:.36s}
+#dlList .dlRow:nth-child(n+6){animation-delay:.44s}
 
-button:active:not(:disabled){transform:translateY(.5px) scale(.985)}
-.rail button:active:not(:disabled),.viewbar button:active:not(:disabled){transform:scale(.94)}
+@keyframes tl-pop{0%{transform:scale(1.4);color:var(--acc-t)}70%{transform:scale(.92)}100%{transform:none}}
+.stats .v.tick{animation:tl-pop .5s var(--ease)}
+
+button:active:not(:disabled){transform:translateY(.5px) scale(.975)}
+.rail button:active:not(:disabled),.viewbar button:active:not(:disabled){transform:scale(.92)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}
   *,#home.on #homeIn>*,#home.on #heroDia *{animation:none!important;opacity:1!important;
@@ -1478,22 +1507,31 @@ const partMat=p=>p.pending?(p.link?MAT_GHOST:MAT_GHOST_FREE)
 const REDUCE_MO=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 
 /* ── 接合／放下的漣漪回饋（獨立網格，不碰零件狀態） ── */
-const RING_GEO=new THREE.RingGeometry(0.62,1,40);
+const RING_GEO=new THREE.RingGeometry(0.72,1,48);
+const DISC_GEO=new THREE.CircleGeometry(1,40);
 const pulses=[];
-function pulseAt(pos,axis){
-  if(REDUCE_MO||!pos)return;
-  const m=new THREE.Mesh(RING_GEO,new THREE.MeshBasicMaterial(
-    {color:0x7ab0ff,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}));
+function _ring(pos,axis,geo,o0,grow,dur,delay,col){
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial(
+    {color:col||0x7ab0ff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
   m.position.copy(pos);
   if(axis)m.quaternion.setFromUnitVectors(V3(0,0,1),axis.clone().normalize());
-  m.renderOrder=990; scene.add(m);
-  pulses.push({m,t0:performance.now(),dur:440});
+  m.scale.setScalar(0.01); m.renderOrder=990; scene.add(m);
+  pulses.push({m,t0:performance.now()+(delay||0),o0,grow,dur});
+}
+function pulseAt(pos,axis){
+  if(REDUCE_MO||!pos)return;
+  _ring(pos,axis,DISC_GEO,0.30,6,340,0,0x9fc6ff);      // 中心一閃
+  _ring(pos,axis,RING_GEO,0.7,15,720,0,0x7ab0ff);      // 主環
+  _ring(pos,axis,RING_GEO,0.4,24,900,110,0x6fa8f5);    // 慢一拍的外環
 }
 function stepPulses(){
+  const now=performance.now();
   for(let i=pulses.length-1;i>=0;i--){
-    const a=pulses[i],p=Math.min(1,(performance.now()-a.t0)/a.dur),e=1-Math.pow(1-p,2);
-    a.m.scale.setScalar(1.2+e*9);
-    a.m.material.opacity=.55*(1-p);
+    const a=pulses[i];
+    if(now<a.t0)continue;
+    const p=Math.min(1,(now-a.t0)/a.dur),e=1-Math.pow(1-p,3);
+    a.m.scale.setScalar(1+e*a.grow);
+    a.m.material.opacity=a.o0*(1-p);
     if(p>=1){scene.remove(a.m);a.m.material.dispose();pulses.splice(i,1);}
   }
 }
@@ -1514,23 +1552,24 @@ function tweenCam(to,dur){
     cam.target.copy(to.target);applyCam();return;}
   camAnim={a:{theta:cam.theta,phi:cam.phi,dist:cam.dist,target:cam.target.clone()},
            b:{theta:to.theta,phi:to.phi,dist:to.dist,target:to.target.clone()},
-           t0:performance.now(),dur:dur||520};
+           t0:performance.now(),dur:dur||820};
 }
 function stepCam(){
   if(!camAnim)return;
   const p=Math.min(1,(performance.now()-camAnim.t0)/camAnim.dur);
-  const e=1-Math.pow(1-p,3);
+  const e=1-Math.pow(1-p,5);                    // easeOutQuint：起步快、收尾綿長有份量
   const a=camAnim.a,b=camAnim.b;
   let dth=b.theta-a.theta; dth=((dth%(2*Math.PI))+3*Math.PI)%(2*Math.PI)-Math.PI;
-  cam.theta=a.theta+dth*e; cam.phi=a.phi+(b.phi-a.phi)*e;
-  cam.dist=a.dist+(b.dist-a.dist)*e;
+  cam.theta=a.theta+dth*e;
+  cam.phi=Math.max(0.02,Math.min(Math.PI-0.02,a.phi+(b.phi-a.phi)*e));
+  cam.dist=Math.max(20,a.dist+(b.dist-a.dist)*e);
   cam.target.lerpVectors(a.target,b.target,e);
   applyCam();
   if(p>=1)camAnim=null;
 }
 const VIEWS={iso:[-0.92,1.0],top:[-Math.PI/2,0.02],front:[-Math.PI/2,Math.PI/2]};
 function setView(k){const v=VIEWS[k];if(!v)return;
-  tweenCam({theta:v[0],phi:v[1],dist:cam.dist,target:cam.target.clone()},460);
+  tweenCam({theta:v[0],phi:v[1],dist:cam.dist,target:cam.target.clone()},720);
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===k));}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 
@@ -2521,6 +2560,13 @@ function placeSelPanel(){
   selpanel.classList.toggle('show',!!(p&&t));
 }
 
+function setStat(id,v){
+  const el0=el(id),s=String(v);
+  if(el0.textContent===s)return;
+  el0.textContent=s;
+  if(REDUCE_MO)return;
+  el0.classList.remove('tick');void el0.offsetWidth;el0.classList.add('tick');
+}
 function refresh(){
   syncPinFills();
   parts.forEach(p=>{
@@ -2528,9 +2574,9 @@ function refresh(){
     p.obj.children.forEach(o=>{if(o.isMesh)
       o.material=on?MAT_SEL:partMat(p);});});
   const free=rebuildMarkers();
-  el('cnt').textContent=parts.length;
-  el('gcnt').textContent=world.children.length;
-  el('scnt').textContent=free;
+  setStat('cnt',parts.length);
+  setStat('gcnt',world.children.length);
+  setStat('scnt',free);
   el('empty').style.display=(parts.length&&!document.body.classList.contains('show-intro'))?'none':'flex';
 
   const p=selPart?byId(selPart):null, t=rotTarget();
@@ -2552,7 +2598,7 @@ function refresh(){
 
   const bar=el('actionbar'),msg=el('actionmsg');
   if(sel.length===2){
-    bar.style.display='flex';
+    bar.classList.add('show');
     const pA=byId(sel[0].partId),pB=byId(sel[1].partId);
     const anySolid=holeMode(pA,sel[0].hole)==='solid'||holeMode(pB,sel[1].hole)==='solid';
     const mA=isMale(pA,sel[0].hole), mB=isMale(pB,sel[1].hole);
@@ -2572,7 +2618,7 @@ function refresh(){
     el('join').disabled=same||anySolid;
     el('brace').disabled=anySolid||mA||mB;   // 斜撐要靠孔定位，凸銷不行
   } else if(sel.length===1){
-    bar.style.display='flex';
+    bar.classList.add('show');
     const sp=byId(sel[0].partId);
     const md=sp?holeMode(sp,sel[0].hole):'auto';
     const nameOfMode={'cross':'十字孔','solid':'填實','round':'圓孔','auto':'預設'};
@@ -2584,7 +2630,7 @@ function refresh(){
     if(md==='cross')el('hmCross').classList.add('on');
     else if(md==='solid')el('hmSolid').classList.add('on');
     else if(md==='round')el('hmRound').classList.add('on');
-  } else bar.style.display='none';
+  } else bar.classList.remove('show');
   if(sel.length!==1){el('joinBtns').style.display='flex';el('holeBtns').style.display='none';}
 
   el('expFused').disabled=!parts.length;
@@ -2713,7 +2759,7 @@ function fitView(instant){
     d=Math.max(60,box.getSize(V3()).length()*1.8);
   }
   if(instant){camAnim=null;cam.target.copy(tgt);cam.dist=d;applyCam();return;}
-  tweenCam({theta:cam.theta,phi:cam.phi,dist:d,target:tgt},480);}
+  tweenCam({theta:cam.theta,phi:cam.phi,dist:d,target:tgt},780);}
 el('fit').onclick=fitView;
 
 addEventListener('keydown',e=>{
@@ -3083,7 +3129,7 @@ function showHome(){
   clearTimeout(_homeT);
   renderDocs();
   el('home').classList.add('on');                     // 主頁淡入蓋住工作台
-  _homeT=setTimeout(()=>document.body.classList.add('home'),380);  // 淡入完才收掉工作台
+  _homeT=setTimeout(()=>document.body.classList.add('home'),640);  // 淡入完才收掉工作台
 }
 function enterWorkbench(id){
   if(id&&!openDoc(id))return;
@@ -3423,7 +3469,10 @@ loadManifold().then(()=>{
 (function loop(){requestAnimationFrame(loop);
   if(markDirty){markDirty=false;rebuildMarkers();}
   stepCam();stepPulses();updateGizmo();placeSelPanel();
-  if(selPart&&!REDUCE_MO)MAT_SEL.emissiveIntensity=0.16+0.10*Math.sin(performance.now()*0.0042);
+  if(!REDUCE_MO){const now=performance.now();
+    if(selPart)MAT_SEL.emissiveIntensity=0.3+0.24*Math.sin(now*0.0038);
+    if(ghost!==null){const g=0.52+0.18*Math.sin(now*0.005);
+      MAT_GHOST.opacity=g;MAT_GHOST_FREE.opacity=g*0.5;}}
   renderer.render(scene,camera);})();
 })();
 </script>
