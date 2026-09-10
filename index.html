@@ -1461,7 +1461,7 @@ function partPieces(p,holeD,grow){
   const cuts=sideCutList(bars,th,holeD);
   const main=bars.map(b=>{
     let g=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    if(cuts.length)g=sideCut(g,cuts,holeD/2,th,b.rot||0,b.off);
+    if(cuts.length&&!SKIP_CUTS)g=sideCut(g,cuts,holeD/2,th,b.rot||0,b.off);
     // 旋轉與位移直接寫進頂點，不經過物件層的矩陣分解
     const rot=b.rot||0, ox=(b.off&&b.off[0])||0, oy=(b.off&&b.off[1])||0;
     const place=gg=>{ if(rot)gg.rotateZ(rot); if(ox||oy)gg.translate(ox,oy,0); return gg; };
@@ -1612,10 +1612,31 @@ function setHoleMode(p,h,mode){
 }
 const holeHalf=(p,h)=>faceUsed(p,2*h)||faceUsed(p,2*h+1);
 
+/* 顯示用幾何只跟 (零件種類 · 孔型 · 跨距 · 沉孔尺寸 · 側孔是否已挖) 有關，
+   跟位置/旋轉/接合無關。快取起來 —— 開專案時 restore 會對每個零件呼叫
+   buildMeshes，若每次都重算，含側孔的零件會逐一跑 manifold 布林運算，
+   幾個零件就卡好幾秒。快取後同樣的零件設定只算一次。 */
+const GEO_CACHE=new Map();
+let SKIP_CUTS=false;                          // restore 時先不挖側孔，之後再逐格補
+function geoSig(p){
+  return p.defKey+':'+(p.hmode?JSON.stringify(p.hmode):'')
+       +'|'+cbDia().toFixed(2)+'|'+cbDep().toFixed(2)+'|'+((MF&&!SKIP_CUTS)?'m':'-');
+}
 function buildMeshes(p){
   p.obj.children.filter(o=>o.isMesh).forEach(o=>p.obj.remove(o));
-  partPieces(p,HOLE).forEach(pc=>{
-    p.obj.add(new THREE.Mesh(pc.geo,partMat(p)));});
+  let pieces;
+  if(p.kind==='brace'){                       // 斜撐跨距是連續值又便宜，不快取
+    pieces=partPieces(p,HOLE);
+  }else{
+    const sig=geoSig(p);
+    pieces=GEO_CACHE.get(sig);
+    if(!pieces){
+      pieces=partPieces(p,HOLE);
+      GEO_CACHE.set(sig,pieces);
+      if(GEO_CACHE.size>400){GEO_CACHE.delete(GEO_CACHE.keys().next().value);}
+    }
+  }
+  pieces.forEach(pc=>p.obj.add(new THREE.Mesh(pc.geo,partMat(p))));
 }
 function socketWorld(p,idx){
   const s=socketsOf(p)[idx],q=p.obj.getWorldQuaternion(Q());
@@ -1658,18 +1679,23 @@ function popHistory(){ if(history.length)history.pop(); }
 function pushHistory(){
   if(histLock)return;history.push(snapshot());if(history.length>60)history.shift();
   future.length=0;}                        // 新動作一出現，原本的「重做」就不再成立
+let cutGen=0;
 function restore(json){
   const s=JSON.parse(json);
+  cutGen++;                                   // 取消上一份還沒補完的側孔工作
   while(world.children.length)world.remove(world.children[0]);
   parts=[];used.clear();
-  s.parts.forEach(d=>{
-    const p={id:d.id,kind:d.kind,defKey:d.defKey,obj:new THREE.Group(),link:null,
-             span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0,
-             hmode:d.hmode||null};
-    p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
-    if(d.pos)p.obj.position.fromArray(d.pos);
-    if(d.rot)p.obj.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
-    parts.push(p);});
+  SKIP_CUTS=true;                             // 先用沒側孔的幾何把場景撐起來（快）
+  try{
+    s.parts.forEach(d=>{
+      const p={id:d.id,kind:d.kind,defKey:d.defKey,obj:new THREE.Group(),link:null,
+               span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0,
+               hmode:d.hmode||null};
+      p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
+      if(d.pos)p.obj.position.fromArray(d.pos);
+      if(d.rot)p.obj.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
+      parts.push(p);});
+  }finally{ SKIP_CUTS=false; }
   s.parts.forEach(d=>{if(d.link)byId(d.id).link=d.link;});
   parts.forEach(p=>{if(p.link)applyLink(p);});
   parts.forEach(p=>{
@@ -1679,7 +1705,24 @@ function restore(json){
                          used.add(p.bRef.partId+':'+p.bRef.idx);
                          used.add(p.id+':1');used.add(p.id+':3');}});
   nextId=s.nextId;spawnN=s.spawnN;selPart=null;sel=[];
-  layout();refresh();
+  SKIP_CUTS=true;                             // syncPinFills 也走無側孔的快版
+  try{ layout();refresh(); } finally { SKIP_CUTS=false; }
+  cutSideHolesSoon();                         // 側孔一格補一個，不卡畫面
+}
+/* restore 之後（或 manifold 剛載好時）把含側孔的零件逐一重建，
+   每格一個 requestAnimationFrame，讓瀏覽器有空檔畫面、不會凍住幾秒。
+   幾何有快取，所以第二次開同一份專案時這一步幾乎瞬間完成。 */
+function cutSideHolesSoon(){
+  if(!MF)return;                              // 模組還沒好；載好時會再呼叫一次
+  const mine=cutGen, q=parts.filter(p=>p&&p.kind!=='brace');
+  let i=0;
+  (function step(){
+    if(mine!==cutGen)return;                  // 已經開了別份專案
+    if(i>=q.length){layout();scheduleMarkers();refresh();return;}
+    const p=q[i++];
+    if(parts.indexOf(p)>=0){buildMeshes(p);layout();}
+    requestAnimationFrame(step);
+  })();
 }
 function undo(){if(!history.length)return;
   future.push(snapshot());if(future.length>60)future.shift();
@@ -3458,7 +3501,7 @@ resize();setView('iso');refresh();
 showHome();
 // 側孔需要布林運算，先在背景把模組載起來
 loadManifold().then(()=>{
-  parts.forEach(buildMeshes);layout();refresh();
+  cutSideHolesSoon();          // 若已開著專案，逐格把側孔補上，不凍畫面
   saveLocal();
 }).catch(()=>{
   toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
