@@ -3289,6 +3289,11 @@ else { window.__cloudReady=()=>window.__cloud.onAuth(onCloudAuth); }
 // 到 https://web3forms.com 用你的 Gmail 免費申請，把拿到的 Access Key 貼在這裡。
 // 信箱本身不會出現在原始碼裡，只有這把 key。
 const W3F_KEY='b349d287-3541-4e76-b80e-dc4c630229d7';
+// 對方有留 Email 時，立刻打一下這個 Apps Script Web App 讓它寄感謝信。
+// 部署 tools/feedback-autoreply.gs 成 Web App 後，把 /exec 網址貼進 AUTOREPLY_URL。
+// 空字串 = 沒設定，就退回「腳本定時掃信箱」那條路。
+const AUTOREPLY_URL='';
+const AUTOREPLY_TOKEN='tl_f276f5ae134abd5a6e786ca9';
 (function(){
   const btn=el('fbBtn'), wrap=el('fbWrap'), tx=el('fbText'), mail=el('fbMail'),
         cnt=el('fbCount'), meta=el('fbMeta'), note=el('fbNote'),
@@ -3326,8 +3331,13 @@ const W3F_KEY='b349d287-3541-4e76-b80e-dc4c630229d7';
           ua:navigator.userAgent
         })});
       const j=await r.json();
-      if(j.success){note.className='ok';note.textContent='已送出，謝謝你';
-        tx.value='';mail.value='';upd();setTimeout(close,1100);}
+      if(j.success){
+        const gave=mail.value.trim();
+        note.className='ok';note.textContent='已送出，謝謝你';
+        tx.value='';mail.value='';upd();setTimeout(close,1100);
+        if(gave&&AUTOREPLY_URL)fetch(AUTOREPLY_URL,{method:'POST',mode:'no-cors',
+          body:new URLSearchParams({token:AUTOREPLY_TOKEN,email:gave})}).catch(()=>{});
+      }
       else{note.className='err';note.textContent='送出失敗：'+(j.message||'未知錯誤');}
     }catch(err){note.className='err';note.textContent='送出失敗，請檢查網路連線';}
     send.disabled=false;
