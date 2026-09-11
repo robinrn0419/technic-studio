@@ -541,44 +541,47 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 
 #home.on #homeTop h1{animation:tl-wipe .5s var(--ease) both}
 
-/* hero 工程圖進場：只在第一次進站播（#home.intro），之後回主頁直接就位，~1.2 秒。
+/* hero 工程圖進場：只在第一次進站播（#home.heroIntro），之後回主頁直接就位，~1.2 秒。
+   注意：class 故意不叫 .intro —— 那個名字已經被 #empty 裡的引導卡片用掉了
+   （.intro{max-width:640px;...}，見上面），兩個都套在 #home 上時會把 #home
+   自己也夾到 640px 寬，造成首頁剛進場時版面被壓扁、動畫播完才彈回正常寬度。
    樑外框跟孔改成淡入＋縮放（從自己的中心長出來），不再用 stroke-dashoffset
    沿路徑描邊——外框是很圓的膠囊形、孔是圓形，描邊描到一半只會看到一截不成
    形的弧線／半顆圓，讀起來像形狀跑掉，不像「還在畫」。直線（尺寸線、卡尺）
    本身沒有這個問題，還是保留描邊延伸的效果。 */
-#home.on.intro #heroDia .cl{opacity:0;animation:tl-fade .22s ease both}
-#home.on.intro #heroDia .cl:nth-of-type(1){animation-delay:.05s;animation-duration:.3s}
-#home.on.intro #heroDia .cl:nth-of-type(2){animation-delay:.09s}
-#home.on.intro #heroDia .cl:nth-of-type(3){animation-delay:.12s}
-#home.on.intro #heroDia .cl:nth-of-type(4){animation-delay:.15s}
-#home.on.intro #heroDia .cl:nth-of-type(5){animation-delay:.18s}
-#home.on.intro #heroDia .cl:nth-of-type(6){animation-delay:.21s}
-#home.on.intro #heroDia .cl:nth-of-type(7){animation-delay:.24s}
-#home.on.intro #heroDia rect.obj{transform-box:fill-box;transform-origin:center;
+#home.on.heroIntro #heroDia .cl{opacity:0;animation:tl-fade .22s ease both}
+#home.on.heroIntro #heroDia .cl:nth-of-type(1){animation-delay:.05s;animation-duration:.3s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(2){animation-delay:.09s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(3){animation-delay:.12s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(4){animation-delay:.15s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(5){animation-delay:.18s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(6){animation-delay:.21s}
+#home.on.heroIntro #heroDia .cl:nth-of-type(7){animation-delay:.24s}
+#home.on.heroIntro #heroDia rect.obj{transform-box:fill-box;transform-origin:center;
   opacity:0;animation:tl-widen .45s var(--ease) .12s both}
-#home.on.intro #heroDia circle.obj{transform-box:fill-box;transform-origin:center;
+#home.on.heroIntro #heroDia circle.obj{transform-box:fill-box;transform-origin:center;
   opacity:0;animation:tl-scalein .22s var(--ease) both}
-#home.on.intro #heroDia circle.obj:nth-of-type(1){animation-delay:.34s}
-#home.on.intro #heroDia circle.obj:nth-of-type(2){animation-delay:.39s}
-#home.on.intro #heroDia circle.obj:nth-of-type(3){animation-delay:.44s}
-#home.on.intro #heroDia circle.obj:nth-of-type(4){animation-delay:.49s}
-#home.on.intro #heroDia circle.obj:nth-of-type(5){animation-delay:.54s}
-#home.on.intro #heroDia circle.obj:nth-of-type(6){animation-delay:.59s}
-#home.on.intro #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(1){animation-delay:.34s}
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(2){animation-delay:.39s}
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(3){animation-delay:.44s}
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(4){animation-delay:.49s}
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(5){animation-delay:.54s}
+#home.on.heroIntro #heroDia circle.obj:nth-of-type(6){animation-delay:.59s}
+#home.on.heroIntro #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
   animation:tl-draw .35s var(--ease) .68s forwards}
-#home.on.intro #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
+#home.on.heroIntro #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
   animation:tl-draw .28s var(--ease) .9s forwards}
-#home.on.intro #heroDia .arw,#home.on.intro #heroDia .dt,
-#home.on.intro #heroDia .dt-s,#home.on.intro #heroDia .ct{
+#home.on.heroIntro #heroDia .arw,#home.on.heroIntro #heroDia .dt,
+#home.on.heroIntro #heroDia .dt-s,#home.on.heroIntro #heroDia .ct{
   opacity:0;animation:tl-fade .22s ease 1.02s forwards}
 /* 沒在 intro 時（平常回主頁，或動畫已經播完）：hero 圖直接顯示完整狀態 */
-#home.on:not(.intro) #heroDia .cl{opacity:1}
-#home.on:not(.intro) #heroDia rect.obj,
-#home.on:not(.intro) #heroDia circle.obj{opacity:1;transform:none}
-#home.on:not(.intro) #heroDia .dim,
-#home.on:not(.intro) #heroDia .cal{stroke-dashoffset:0}
-#home.on:not(.intro) #heroDia .arw,#home.on:not(.intro) #heroDia .dt,
-#home.on:not(.intro) #heroDia .dt-s,#home.on:not(.intro) #heroDia .ct{opacity:1}
+#home.on:not(.heroIntro) #heroDia .cl{opacity:1}
+#home.on:not(.heroIntro) #heroDia rect.obj,
+#home.on:not(.heroIntro) #heroDia circle.obj{opacity:1;transform:none}
+#home.on:not(.heroIntro) #heroDia .dim,
+#home.on:not(.heroIntro) #heroDia .cal{stroke-dashoffset:0}
+#home.on:not(.heroIntro) #heroDia .arw,#home.on:not(.heroIntro) #heroDia .dt,
+#home.on:not(.heroIntro) #heroDia .dt-s,#home.on:not(.heroIntro) #heroDia .ct{opacity:1}
 
 /* 專案列表：逐列浮現，封頂在第 5 列避免長列表等太久 */
 #dlList .dlRow{animation:tl-rise .32s var(--ease) both}
@@ -981,52 +984,6 @@ if(typeof THREE==='undefined'){
 const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 const Q=()=>new THREE.Quaternion();
 const el=id=>document.getElementById(id);
-
-/* ── 暫時除錯：確認 syncHomeSize 有沒有真的擋住版面尺寸的競態，診斷完會拿掉 ── */
-(function(){
-  const t0=performance.now();
-  const log=[];
-  const box=document.createElement('div');
-  box.id='tlDebug';
-  box.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;'+
-    'background:rgba(0,0,0,.85);color:#7fd88a;font:12px/1.55 monospace;'+
-    'padding:8px 10px;border-radius:6px;white-space:pre;pointer-events:none;'+
-    'max-width:95vw;overflow:auto';
-  document.documentElement.appendChild(box);
-  function sample(){
-    const home=document.getElementById('home'), homeIn=document.getElementById('homeIn');
-    const hr=home?home.getBoundingClientRect():null;
-    const hir=homeIn?homeIn.getBoundingClientRect():null;
-    const hcs=home?getComputedStyle(home):null;
-    const bcs=getComputedStyle(document.body);
-    const hcs2=getComputedStyle(document.documentElement);
-    return{
-      t:(performance.now()-t0).toFixed(0),
-      iw:innerWidth,dpr:devicePixelRatio,
-      hw:hr?hr.width.toFixed(0):'-',hiw:hir?hir.width.toFixed(0):'-',
-      styleW:home?home.style.width:'-',
-      compW:hcs?hcs.width:'-',
-      tf:hcs?hcs.transform:'-',zm:hcs?hcs.zoom:'-',
-      bodyTf:bcs.transform,bodyZm:bcs.zoom,
-      htmlTf:hcs2.transform,htmlZm:hcs2.zoom,
-      op:home?getComputedStyle(home).opacity:'-',
-      cls:home?home.className:'-'
-    };
-  }
-  function tick(){
-    const r=sample();log.push(r);
-    const last=log.slice(-6).map(x=>
-      x.t+'ms iw='+x.iw+' hw='+x.hw+' hiw='+x.hiw+' compW='+x.compW+
-      '\n  tf='+x.tf+' zm='+x.zm+' bodyTf='+x.bodyTf+' htmlTf='+x.htmlTf+
-      '\n  styleW='+x.styleW+' op='+x.op+' cls='+x.cls
-    ).join('\n');
-    box.textContent='[TL debug2 · 5 秒後自動停]\n'+last;
-    if(performance.now()-t0<5000)requestAnimationFrame(tick);
-    else{try{localStorage.setItem('tl:bootlog2',JSON.stringify(log));}catch(e){}
-      console.log('TL bootlog2',log);}
-  }
-  requestAnimationFrame(tick);
-})();
 
 /* ── 真實尺寸（mm） ── */
 const MOD=8, TH=7.8, R=3.9, HOLE=4.85;
@@ -3228,7 +3185,7 @@ function showHome(){
   renderDocs();
   const home=el('home');
   if(!_introDone){                                    // hero 描繪只在第一次進站播，之後回主頁直接就位
-    _introDone=true;home.classList.add('intro');
+    _introDone=true;home.classList.add('heroIntro');
     introT0=performance.now();                        // 用主迴圈檢查解除，不靠背景分頁會被延後的 setTimeout
   }
   home.classList.add('on');                           // 主頁淡入蓋住工作台
@@ -3338,7 +3295,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.11g';
+const BUILD='2026.09.12';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
@@ -3567,15 +3524,6 @@ el('expParts').onclick=()=>{
   refresh=function(){_r.apply(this,arguments);
     if(typeof scheduleSave==='function')scheduleSave();};})();
 
-// #home 是 position:fixed;inset:0，理論上不需要再指定尺寸；但剛導航進頁面的頭幾百毫秒，
-// 版面引擎回報的視窗寬高有時會跟 window.innerWidth/innerHeight 對不上（後者是對的），
-// 導致 #home 短暫用錯的（通常是一半）尺寸排版。改用 JS 量到的值明確鎖定像素尺寸，
-// 繞開這個競態，而不是依賴 CSS 自己算視窗大小。
-function syncHomeSize(){const h=el('home');if(h){h.style.width=innerWidth+'px';h.style.height=innerHeight+'px';}}
-syncHomeSize();
-addEventListener('resize',syncHomeSize);
-(function(){let n=0;(function tick(){syncHomeSize();if(++n<90)requestAnimationFrame(tick);})();})();
-
 resize();setView('iso');refresh();
 showHome();
 // 側孔需要布林運算，先在背景把模組載起來
@@ -3590,7 +3538,7 @@ loadManifold().then(()=>{
 });
 (function loop(){requestAnimationFrame(loop);
   // rAF 只在分頁真的在畫面上跑，用它來解除 .intro 不會被背景分頁的計時器節流卡住
-  if(introT0!==null&&performance.now()-introT0>1400){introT0=null;el('home').classList.remove('intro');}
+  if(introT0!==null&&performance.now()-introT0>1400){introT0=null;el('home').classList.remove('heroIntro');}
   if(markDirty){markDirty=false;rebuildMarkers();}
   stepCam();stepPulses();updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
