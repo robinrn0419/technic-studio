@@ -268,7 +268,7 @@ body.show-intro #empty{display:flex!important}
 #askRow{display:flex;gap:4px;justify-content:flex-end;margin-top:30px}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
-#home{position:fixed;inset:0;width:100vw;height:100vh;z-index:50;background:var(--bg);overflow:auto;
+#home{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;
   opacity:0;visibility:hidden;transform:scale(1.015);
   transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s .22s}
 #home.on{opacity:1;visibility:visible;transform:none;
@@ -427,7 +427,7 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 #guide{position:fixed;inset:0;z-index:70;display:none;background:var(--bg);overflow:auto}
 #guide.on{display:block}
 #guideIn{max-width:660px;margin:0 auto;padding:104px 40px 120px;position:relative}
-#guideIn h2{margin:0;font-size:clamp(32px,5.4vw,54px);font-weight:600;
+#guideIn h2{margin:0;font-size:54px;font-weight:600;
   letter-spacing:-.032em;line-height:1.04;max-width:15ch}
 #guideIn .gLead{margin:34px 0 0;max-width:50ch;font-size:17px;line-height:1.8;
   letter-spacing:-.008em;color:var(--text)}
@@ -460,6 +460,7 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
   #fbBlock p{font-size:16px}
   #homeEnd{margin-top:60px}
   #guideIn{padding:76px 20px 90px}
+  #guideIn h2{font-size:32px}
   #guideClose{top:16px;right:16px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -980,47 +981,6 @@ if(typeof THREE==='undefined'){
 const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 const Q=()=>new THREE.Quaternion();
 const el=id=>document.getElementById(id);
-
-/* ── 暫時除錯：記錄剛載入頁面時的版面時間軸，診斷完會拿掉 ── */
-(function(){
-  const t0=performance.now();
-  const log=[];
-  const box=document.createElement('div');
-  box.id='tlDebug';
-  box.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;'+
-    'background:rgba(0,0,0,.85);color:#7fd88a;font:12px/1.55 monospace;'+
-    'padding:8px 10px;border-radius:6px;white-space:pre;pointer-events:none;'+
-    'max-width:95vw;overflow:auto';
-  document.documentElement.appendChild(box);
-  function sample(){
-    const home=document.getElementById('home'), homeIn=document.getElementById('homeIn');
-    const hr=home?home.getBoundingClientRect():null;
-    const hir=homeIn?homeIn.getBoundingClientRect():null;
-    return{
-      t:(performance.now()-t0).toFixed(0),
-      iw:innerWidth,ih:innerHeight,dpr:devicePixelRatio,
-      hw:hr?hr.width.toFixed(0):'-',hh:hr?hr.height.toFixed(0):'-',
-      hiw:hir?hir.width.toFixed(0):'-',
-      op:home?getComputedStyle(home).opacity:'-',
-      cls:home?home.className:'-',
-      bodyHome:document.body.classList.contains('home'),
-      rs:document.readyState,
-      fonts:(document.fonts&&document.fonts.status)||'-'
-    };
-  }
-  function tick(){
-    const r=sample();log.push(r);
-    const last=log.slice(-9).map(x=>
-      x.t+'ms iw='+x.iw+' hw='+x.hw+' hiw='+x.hiw+' op='+x.op+
-      '\n  cls='+x.cls+' body.home='+x.bodyHome+' rs='+x.rs+' fonts='+x.fonts
-    ).join('\n');
-    box.textContent='[TL debug · 5 秒後自動停]\n'+last;
-    if(performance.now()-t0<5000)requestAnimationFrame(tick);
-    else{try{localStorage.setItem('tl:bootlog',JSON.stringify(log));}catch(e){}
-      console.log('TL bootlog',log);}
-  }
-  requestAnimationFrame(tick);
-})();
 
 /* ── 真實尺寸（mm） ── */
 const MOD=8, TH=7.8, R=3.9, HOLE=4.85;
@@ -3332,7 +3292,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.11d';
+const BUILD='2026.09.11e';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
