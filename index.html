@@ -982,6 +982,44 @@ const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 const Q=()=>new THREE.Quaternion();
 const el=id=>document.getElementById(id);
 
+/* ── 暫時除錯：確認 syncHomeSize 有沒有真的擋住版面尺寸的競態，診斷完會拿掉 ── */
+(function(){
+  const t0=performance.now();
+  const log=[];
+  const box=document.createElement('div');
+  box.id='tlDebug';
+  box.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;'+
+    'background:rgba(0,0,0,.85);color:#7fd88a;font:12px/1.55 monospace;'+
+    'padding:8px 10px;border-radius:6px;white-space:pre;pointer-events:none;'+
+    'max-width:95vw;overflow:auto';
+  document.documentElement.appendChild(box);
+  function sample(){
+    const home=document.getElementById('home'), homeIn=document.getElementById('homeIn');
+    const hr=home?home.getBoundingClientRect():null;
+    const hir=homeIn?homeIn.getBoundingClientRect():null;
+    return{
+      t:(performance.now()-t0).toFixed(0),
+      iw:innerWidth,dpr:devicePixelRatio,
+      hw:hr?hr.width.toFixed(0):'-',hiw:hir?hir.width.toFixed(0):'-',
+      styleW:home?home.style.width:'-',
+      op:home?getComputedStyle(home).opacity:'-',
+      cls:home?home.className:'-'
+    };
+  }
+  function tick(){
+    const r=sample();log.push(r);
+    const last=log.slice(-9).map(x=>
+      x.t+'ms iw='+x.iw+' dpr='+x.dpr+' hw='+x.hw+' hiw='+x.hiw+
+      '\n  styleW='+x.styleW+' op='+x.op+' cls='+x.cls
+    ).join('\n');
+    box.textContent='[TL debug2 · 5 秒後自動停]\n'+last;
+    if(performance.now()-t0<5000)requestAnimationFrame(tick);
+    else{try{localStorage.setItem('tl:bootlog2',JSON.stringify(log));}catch(e){}
+      console.log('TL bootlog2',log);}
+  }
+  requestAnimationFrame(tick);
+})();
+
 /* ── 真實尺寸（mm） ── */
 const MOD=8, TH=7.8, R=3.9, HOLE=4.85;
 
@@ -3292,7 +3330,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.11e';
+const BUILD='2026.09.11f';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
@@ -3520,6 +3558,15 @@ el('expParts').onclick=()=>{
 (function(){const _r=refresh;
   refresh=function(){_r.apply(this,arguments);
     if(typeof scheduleSave==='function')scheduleSave();};})();
+
+// #home 是 position:fixed;inset:0，理論上不需要再指定尺寸；但剛導航進頁面的頭幾百毫秒，
+// 版面引擎回報的視窗寬高有時會跟 window.innerWidth/innerHeight 對不上（後者是對的），
+// 導致 #home 短暫用錯的（通常是一半）尺寸排版。改用 JS 量到的值明確鎖定像素尺寸，
+// 繞開這個競態，而不是依賴 CSS 自己算視窗大小。
+function syncHomeSize(){const h=el('home');if(h){h.style.width=innerWidth+'px';h.style.height=innerHeight+'px';}}
+syncHomeSize();
+addEventListener('resize',syncHomeSize);
+(function(){let n=0;(function tick(){syncHomeSize();if(++n<90)requestAnimationFrame(tick);})();})();
 
 resize();setView('iso');refresh();
 showHome();
