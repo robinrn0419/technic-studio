@@ -268,7 +268,7 @@ body.show-intro #empty{display:flex!important}
 #askRow{display:flex;gap:4px;justify-content:flex-end;margin-top:30px}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
-#home{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;
+#home{position:fixed;inset:0;width:100vw;height:100vh;z-index:50;background:var(--bg);overflow:auto;
   opacity:0;visibility:hidden;transform:scale(1.015);
   transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s .22s}
 #home.on{opacity:1;visibility:visible;transform:none;
@@ -285,7 +285,7 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 #homeTop,#howto,#homeBar,#dlList,#fbBlock,#homeEnd{
   padding-left:var(--gut)}
 #homeTop{padding:104px 0 0;position:relative}
-#homeTop h1{margin:0;font-size:clamp(46px,9.4vw,88px);font-weight:600;
+#homeTop h1{margin:0;font-size:88px;font-weight:600;
   letter-spacing:-.038em;line-height:.92}
 #homeTop h1 em{display:block;font-style:normal;font-size:.34em;font-weight:500;
   letter-spacing:-.005em;color:var(--muted);margin-top:.3em}
@@ -465,8 +465,10 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 @media (prefers-reduced-motion:reduce){
   .dlRow,.dlIx,.dlAct,#howtoBody,#howto .chev{transition:none}
 }
+@media (max-width:980px){#homeTop h1{font-size:64px}}
 @media (max-width:760px){
   #homeIn{--gut:28px;--pad:20px;padding:0 var(--pad) 90px}
+  #homeTop h1{font-size:46px}
   #homeTop{padding-top:64px}
   #acct{position:static;margin-top:34px;justify-content:flex-start}
   #acctName{text-align:left}
