@@ -1931,7 +1931,7 @@ function updateGhost(e){
           if(d<bd){bd=d;tgt=c;pick=gh;}
         });
       });
-      if(bd>900){tgt=null;pick=null;}       // 30mm 外就不吸附
+      if(bd>225){tgt=null;pick=null;}       // 15mm 外就不吸附（原本 30mm 太黏，常吸到不想要的孔）
     }
   }
   if(tgt){
@@ -3295,7 +3295,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12';
+const BUILD='2026.09.12b';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
