@@ -1886,8 +1886,16 @@ function usableHoles(p){
   for(let i=0;i<n;i++) if(holeMode(p,i)!=='solid') out.push(i);
   return out.length?out:[0];
 }
+// 孔的朝向類型：正面孔/公頭沿樑的扁平面法線（軸向 z 分量大），側孔/側凸銷
+// 沿樑寬度方向貫穿（軸向落在 xy 平面）。吸附配對時不能把這兩種混在一起比
+// 距離——面孔跟側孔就算位置靠近，插入方向也完全不同，硬湊在一起只會讓
+// 零件吸到一個朝向莫名其妙的地方。
+function holeKind(p,h){
+  const s=socketsOf(p)[2*h];
+  return (s&&Math.abs(s.axis[2])>0.5)?'face':'side';
+}
 
-// 收集游標附近所有可用的空孔（含世界座標）
+// 收集游標附近所有可用的空孔（含世界座標與孔的朝向類型）
 function freeHolesNearRay(maxD2){
   const out=[];
   parts.forEach(q=>{
@@ -1899,7 +1907,7 @@ function freeHolesNearRay(maxD2){
       if(pinBusy.has(q.id+'#'+h))continue;
       const w=holeWorld(q,h);
       if(ray.ray.distanceSqToPoint(w.pos)<maxD2)
-        out.push({partId:q.id,hole:h,pos:w.pos.clone()});
+        out.push({partId:q.id,hole:h,pos:w.pos.clone(),kind:holeKind(q,h)});
     }
   });
   return out;
@@ -1920,9 +1928,22 @@ function updateGhost(e){
   const cand=freeHolesNearRay(searchD2);    // 候選孔搜尋半徑
   let tgt=null, pick=null;
   if(cand.length){
-    // 先把零件自由擺在游標處（深度對齊最近的候選孔），再比對每一對孔
-    const ref=cand.reduce((a,b)=>
-      ray.ray.distanceSqToPoint(a.pos)<=ray.ray.distanceSqToPoint(b.pos)?a:b);
+    // 側孔跟正面孔分開找游標正下方最近的那個，只在零件自己也有同類型的孔時
+    // 才算數——避免零件身上一個正面孔硬去配旁邊零件一個側孔，兩者插入方向
+    // 完全不同，湊在一起只會讓朝向亂跳。兩種都找得到就選離游標比較近的那個。
+    const gHoles=usableHoles(g);
+    const gKinds=new Set(gHoles.map(gh=>holeKind(g,gh)));
+    const byKind={face:[],side:[]};
+    cand.forEach(c=>{(byKind[c.kind]||byKind.face).push(c);});
+    let ref=null,refD=Infinity;
+    ['face','side'].forEach(kind=>{
+      if(!gKinds.has(kind)||!byKind[kind].length)return;
+      const r=byKind[kind].reduce((a,b)=>
+        ray.ray.distanceSqToPoint(a.pos)<=ray.ray.distanceSqToPoint(b.pos)?a:b);
+      const d=ray.ray.distanceSqToPoint(r.pos);
+      if(d<refD){refD=d;ref=r;}
+    });
+    if(ref){
     const nrm=camera.getWorldDirection(V3()).clone();
     const pl=new THREE.Plane().setFromNormalAndCoplanarPoint(nrm,ref.pos);
     const hit=V3();
@@ -1931,17 +1952,19 @@ function updateGhost(e){
       g.obj.position.copy(hit);
       g.obj.quaternion.setFromAxisAngle(V3(0,0,1),ghostRoll);
       g.obj.updateMatrixWorld(true);
-      // 吸附目標固定是 ref（游標正下方那個孔）——零件只挑自己哪個孔去對齊 ref，
-      // 不要整個零件、整片候選孔一起搜「全域最近的一對」。之前那樣搜，常常是
-      // 零件上其他孔跟旁邊另一個候選孔剛好更近，於是吸到游標底下以外的孔，
-      // 使用者完全猜不到會吸到哪裡。
+      // 吸附目標固定是 ref（游標正下方那個孔）——零件只挑自己「同類型」的孔
+      // 去對齊 ref，不要整個零件、整片候選孔一起搜「全域最近的一對」。之前
+      // 那樣搜，常常是零件上其他孔跟旁邊另一個候選孔剛好更近，於是吸到游標
+      // 底下以外的孔，使用者完全猜不到會吸到哪裡。
       let bd=1e9;
-      usableHoles(g).forEach(gh=>{
+      gHoles.forEach(gh=>{
+        if(holeKind(g,gh)!==ref.kind)return;
         const d=holeWorld(g,gh).pos.distanceToSquared(ref.pos);
         if(d<bd){bd=d;pick=gh;}
       });
       tgt=ref;
       if(bd>snapD2){tgt=null;pick=null;}
+    }
     }
   }
   if(tgt){
@@ -3305,7 +3328,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12d';
+const BUILD='2026.09.12e';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
