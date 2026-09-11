@@ -525,6 +525,8 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 @keyframes tl-fade{from{opacity:0}to{opacity:1}}
 @keyframes tl-draw{from{stroke-dashoffset:var(--dl,1400)}to{stroke-dashoffset:0}}
 @keyframes tl-wipe{from{clip-path:inset(0 100% -10% 0)}to{clip-path:inset(0 -2% -10% 0)}}
+@keyframes tl-widen{from{opacity:0;transform:scaleX(.2)}to{opacity:1;transform:none}}
+@keyframes tl-scalein{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
 
 /* 主頁分區：每次進主頁都有的輕微浮現（快、克制） */
 #home.on #homeIn>*{animation:tl-rise .42s var(--ease) both}
@@ -536,8 +538,11 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 
 #home.on #homeTop h1{animation:tl-wipe .5s var(--ease) both}
 
-/* hero 工程圖描繪：只在第一次進站播（#home.intro），之後回主頁直接就位。
-   壓縮到 ~1.2 秒，盡量縮短「還沒畫完、看起來像壞掉」的空窗。 */
+/* hero 工程圖進場：只在第一次進站播（#home.intro），之後回主頁直接就位，~1.2 秒。
+   樑外框跟孔改成淡入＋縮放（從自己的中心長出來），不再用 stroke-dashoffset
+   沿路徑描邊——外框是很圓的膠囊形、孔是圓形，描邊描到一半只會看到一截不成
+   形的弧線／半顆圓，讀起來像形狀跑掉，不像「還在畫」。直線（尺寸線、卡尺）
+   本身沒有這個問題，還是保留描邊延伸的效果。 */
 #home.on.intro #heroDia .cl{opacity:0;animation:tl-fade .22s ease both}
 #home.on.intro #heroDia .cl:nth-of-type(1){animation-delay:.05s;animation-duration:.3s}
 #home.on.intro #heroDia .cl:nth-of-type(2){animation-delay:.09s}
@@ -546,10 +551,10 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 #home.on.intro #heroDia .cl:nth-of-type(5){animation-delay:.18s}
 #home.on.intro #heroDia .cl:nth-of-type(6){animation-delay:.21s}
 #home.on.intro #heroDia .cl:nth-of-type(7){animation-delay:.24s}
-#home.on.intro #heroDia rect.obj{--dl:1000;stroke-dasharray:1000;stroke-dashoffset:1000;
-  animation:tl-draw .5s var(--ease) .12s forwards}
-#home.on.intro #heroDia circle.obj{--dl:126;stroke-dasharray:126;stroke-dashoffset:126;
-  animation:tl-draw .24s var(--ease) both}
+#home.on.intro #heroDia rect.obj{transform-box:fill-box;transform-origin:center;
+  opacity:0;animation:tl-widen .45s var(--ease) .12s both}
+#home.on.intro #heroDia circle.obj{transform-box:fill-box;transform-origin:center;
+  opacity:0;animation:tl-scalein .22s var(--ease) both}
 #home.on.intro #heroDia circle.obj:nth-of-type(1){animation-delay:.34s}
 #home.on.intro #heroDia circle.obj:nth-of-type(2){animation-delay:.39s}
 #home.on.intro #heroDia circle.obj:nth-of-type(3){animation-delay:.44s}
@@ -566,7 +571,7 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 /* 沒在 intro 時（平常回主頁，或動畫已經播完）：hero 圖直接顯示完整狀態 */
 #home.on:not(.intro) #heroDia .cl{opacity:1}
 #home.on:not(.intro) #heroDia rect.obj,
-#home.on:not(.intro) #heroDia circle.obj,
+#home.on:not(.intro) #heroDia circle.obj{opacity:1;transform:none}
 #home.on:not(.intro) #heroDia .dim,
 #home.on:not(.intro) #heroDia .cal{stroke-dashoffset:0}
 #home.on:not(.intro) #heroDia .arw,#home.on:not(.intro) #heroDia .dt,
