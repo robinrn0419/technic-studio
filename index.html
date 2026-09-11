@@ -536,11 +536,41 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 
 #home.on #homeTop h1{animation:tl-wipe .5s var(--ease) both}
 
-/* hero 工程圖：整張圖一起淡入，不分段描繪。
-   之前用 stroke-dashoffset 逐段畫，載入越慢（跑三個 CDN、起 WebGL、算零件庫）
-   等到能畫的時候，使用者看到的就是「畫一半」的圖，越慢看起來越像壞掉。
-   改成單純淡入，不管主執行緒多忙，畫出來的當下就是完整的圖，不會有半成品狀態。 */
-#home.on #heroDia{opacity:0;animation:tl-fade .4s ease both}
+/* hero 工程圖描繪：只在第一次進站播（#home.intro），之後回主頁直接就位。
+   壓縮到 ~1.2 秒，盡量縮短「還沒畫完、看起來像壞掉」的空窗。 */
+#home.on.intro #heroDia .cl{opacity:0;animation:tl-fade .22s ease both}
+#home.on.intro #heroDia .cl:nth-of-type(1){animation-delay:.05s;animation-duration:.3s}
+#home.on.intro #heroDia .cl:nth-of-type(2){animation-delay:.09s}
+#home.on.intro #heroDia .cl:nth-of-type(3){animation-delay:.12s}
+#home.on.intro #heroDia .cl:nth-of-type(4){animation-delay:.15s}
+#home.on.intro #heroDia .cl:nth-of-type(5){animation-delay:.18s}
+#home.on.intro #heroDia .cl:nth-of-type(6){animation-delay:.21s}
+#home.on.intro #heroDia .cl:nth-of-type(7){animation-delay:.24s}
+#home.on.intro #heroDia rect.obj{--dl:1000;stroke-dasharray:1000;stroke-dashoffset:1000;
+  animation:tl-draw .5s var(--ease) .12s forwards}
+#home.on.intro #heroDia circle.obj{--dl:126;stroke-dasharray:126;stroke-dashoffset:126;
+  animation:tl-draw .24s var(--ease) both}
+#home.on.intro #heroDia circle.obj:nth-of-type(1){animation-delay:.34s}
+#home.on.intro #heroDia circle.obj:nth-of-type(2){animation-delay:.39s}
+#home.on.intro #heroDia circle.obj:nth-of-type(3){animation-delay:.44s}
+#home.on.intro #heroDia circle.obj:nth-of-type(4){animation-delay:.49s}
+#home.on.intro #heroDia circle.obj:nth-of-type(5){animation-delay:.54s}
+#home.on.intro #heroDia circle.obj:nth-of-type(6){animation-delay:.59s}
+#home.on.intro #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
+  animation:tl-draw .35s var(--ease) .68s forwards}
+#home.on.intro #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
+  animation:tl-draw .28s var(--ease) .9s forwards}
+#home.on.intro #heroDia .arw,#home.on.intro #heroDia .dt,
+#home.on.intro #heroDia .dt-s,#home.on.intro #heroDia .ct{
+  opacity:0;animation:tl-fade .22s ease 1.02s forwards}
+/* 沒在 intro 時（平常回主頁，或動畫已經播完）：hero 圖直接顯示完整狀態 */
+#home.on:not(.intro) #heroDia .cl{opacity:1}
+#home.on:not(.intro) #heroDia rect.obj,
+#home.on:not(.intro) #heroDia circle.obj,
+#home.on:not(.intro) #heroDia .dim,
+#home.on:not(.intro) #heroDia .cal{stroke-dashoffset:0}
+#home.on:not(.intro) #heroDia .arw,#home.on:not(.intro) #heroDia .dt,
+#home.on:not(.intro) #heroDia .dt-s,#home.on:not(.intro) #heroDia .ct{opacity:1}
 
 /* 專案列表：逐列浮現，封頂在第 5 列避免長列表等太久 */
 #dlList .dlRow{animation:tl-rise .32s var(--ease) both}
@@ -3136,13 +3166,17 @@ const Ask=(function(){
 })();
 
 /* ── 主頁 ↔ 工作台 ── */
-let atHome=true, _homeT=null;
+let atHome=true, _homeT=null, _introDone=false, introT0=null;
 function showHome(){
   saveLocal();
   atHome=true;
   clearTimeout(_homeT);
   renderDocs();
   const home=el('home');
+  if(!_introDone){                                    // hero 描繪只在第一次進站播，之後回主頁直接就位
+    _introDone=true;home.classList.add('intro');
+    introT0=performance.now();                        // 用主迴圈檢查解除，不靠背景分頁會被延後的 setTimeout
+  }
   home.classList.add('on');                           // 主頁淡入蓋住工作台
   _homeT=setTimeout(()=>document.body.classList.add('home'),300);  // 淡入完才收掉工作台
 }
@@ -3492,6 +3526,8 @@ loadManifold().then(()=>{
   if(atHome&&typeof renderDocs==='function')renderDocs();
 });
 (function loop(){requestAnimationFrame(loop);
+  // rAF 只在分頁真的在畫面上跑，用它來解除 .intro 不會被背景分頁的計時器節流卡住
+  if(introT0!==null&&performance.now()-introT0>1400){introT0=null;el('home').classList.remove('intro');}
   if(markDirty){markDirty=false;rebuildMarkers();}
   stepCam();stepPulses();updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
