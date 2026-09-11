@@ -44,7 +44,8 @@
   --ax-x:#e05a50; --ax-y:#7cb648; --ax-z:#5590d9;
   --sans:'Inter','Noto Sans TC',system-ui,sans-serif;
   --mono:'JetBrains Mono',ui-monospace,monospace;
-  --ease:cubic-bezier(.16,1,.3,1);
+  --ease:cubic-bezier(.16,1,.3,1);         /* 進場/退場（ease-out） */
+  --ease-io:cubic-bezier(.65,0,.35,1);     /* 畫面上的東西在動（ease-in-out） */
   --r:5px; --top:48px; --rail:54px; --fly:238px;
 }
 *{box-sizing:border-box}
@@ -209,8 +210,8 @@ input[type=range]:disabled{opacity:.25}
   background:var(--panel);border:1px solid var(--hair-2);border-radius:8px;
   box-shadow:0 14px 40px rgba(0,0,0,.5);padding:12px 12px 12px 18px;
   max-width:min(620px,92vw);
-  opacity:0;transform:translateX(-50%) translateY(24px) scale(.95);pointer-events:none;
-  transition:opacity .3s var(--ease),transform .38s var(--ease)}
+  opacity:0;transform:translateX(-50%) translateY(16px) scale(.97);pointer-events:none;
+  transition:opacity .22s var(--ease),transform .26s var(--ease)}
 .actionbar.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
 .actionbar .msg{font-family:var(--mono);font-size:10.5px;font-weight:300;color:var(--muted);
   line-height:1.8;letter-spacing:.02em}
@@ -268,24 +269,14 @@ body.show-intro #empty{display:flex!important}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
 #home{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;
-  opacity:0;visibility:hidden;transform:scale(1.035);filter:blur(6px);
-  transition:opacity .5s var(--ease),transform .5s var(--ease),filter .5s var(--ease),visibility 0s .5s}
-#home.on{opacity:1;visibility:visible;transform:none;filter:none;
-  transition:opacity .6s var(--ease),transform .62s var(--ease),filter .5s var(--ease),visibility 0s}
+  opacity:0;visibility:hidden;transform:scale(1.015);
+  transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s .22s}
+#home.on{opacity:1;visibility:visible;transform:none;
+  transition:opacity .26s var(--ease),transform .26s var(--ease),visibility 0s}
 body.home .chrome,body.home .dock,body.home #stage,
 body.home .viewbar,body.home .actionbar,body.home .foot{display:none}
-body:not(.home) .chrome{animation:tl-drop .58s var(--ease) both}
-body:not(.home) .dock{animation:tl-slide .6s var(--ease) .06s both}
-body:not(.home) .viewbar{animation:tl-rise .6s var(--ease) .22s both}
-body:not(.home) .stats>div{animation:tl-rise .55s var(--ease) both}
-body:not(.home) .stats>div:nth-child(2){animation-delay:.07s}
-body:not(.home) .stats>div:nth-child(3){animation-delay:.14s}
-body:not(.home) .tools>*{animation:tl-rise .5s var(--ease) both}
-body:not(.home) .tools>*:nth-child(2){animation-delay:.04s}
-body:not(.home) .tools>*:nth-child(3){animation-delay:.08s}
-body:not(.home) .tools>*:nth-child(4){animation-delay:.12s}
-body:not(.home) .tools>*:nth-child(5){animation-delay:.16s}
-body:not(.home) .tools>*:nth-child(n+6){animation-delay:.2s}
+body:not(.home) .chrome{animation:tl-drop .3s var(--ease) both}
+body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
 @keyframes tl-drop{from{transform:translateY(-100%)}to{transform:none}}
 @keyframes tl-slide{from{transform:translateX(-100%)}to{transform:none}}
 
@@ -530,59 +521,68 @@ body:not(.home) .tools>*:nth-child(n+6){animation-delay:.2s}
   .actionbar.show{transform:none}
 }
 /* ── 進場動畫 ── */
-@keyframes tl-rise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes tl-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes tl-fade{from{opacity:0}to{opacity:1}}
 @keyframes tl-draw{from{stroke-dashoffset:var(--dl,1400)}to{stroke-dashoffset:0}}
 @keyframes tl-wipe{from{clip-path:inset(0 100% -10% 0)}to{clip-path:inset(0 -2% -10% 0)}}
 
-#home.on #homeIn>*{animation:tl-rise 1s var(--ease) both}
-#home.on #homeIn>*:nth-child(2){animation-delay:.16s}
-#home.on #homeIn>*:nth-child(3){animation-delay:.3s}
-#home.on #homeIn>*:nth-child(4){animation-delay:.42s}
-#home.on #homeIn>*:nth-child(5){animation-delay:.54s}
-#home.on #homeIn>*:nth-child(6){animation-delay:.66s}
+/* 主頁分區：每次進主頁都有的輕微浮現（快、克制） */
+#home.on #homeIn>*{animation:tl-rise .42s var(--ease) both}
+#home.on #homeIn>*:nth-child(2){animation-delay:.05s}
+#home.on #homeIn>*:nth-child(3){animation-delay:.1s}
+#home.on #homeIn>*:nth-child(4){animation-delay:.15s}
+#home.on #homeIn>*:nth-child(5){animation-delay:.2s}
+#home.on #homeIn>*:nth-child(6){animation-delay:.25s}
 
-#home.on #homeTop h1{animation:tl-wipe 1.15s var(--ease) .12s both}
+#home.on #homeTop h1{animation:tl-wipe .5s var(--ease) both}
 
-/* hero 工程圖：線條自己畫出來 */
-#home.on #heroDia .cl{opacity:0;animation:tl-fade .55s ease both}
-#home.on #heroDia .cl:nth-of-type(1){animation-delay:.28s;animation-duration:.9s}
-#home.on #heroDia .cl:nth-of-type(2){animation-delay:.4s}
-#home.on #heroDia .cl:nth-of-type(3){animation-delay:.48s}
-#home.on #heroDia .cl:nth-of-type(4){animation-delay:.56s}
-#home.on #heroDia .cl:nth-of-type(5){animation-delay:.64s}
-#home.on #heroDia .cl:nth-of-type(6){animation-delay:.72s}
-#home.on #heroDia .cl:nth-of-type(7){animation-delay:.8s}
-#home.on #heroDia rect.obj{--dl:1000;stroke-dasharray:1000;stroke-dashoffset:1000;
-  animation:tl-draw 1.4s var(--ease) .6s forwards}
-#home.on #heroDia circle.obj{--dl:126;stroke-dasharray:126;stroke-dashoffset:126;
-  animation:tl-draw .65s var(--ease) both}
-#home.on #heroDia circle.obj:nth-of-type(1){animation-delay:1s}
-#home.on #heroDia circle.obj:nth-of-type(2){animation-delay:1.13s}
-#home.on #heroDia circle.obj:nth-of-type(3){animation-delay:1.26s}
-#home.on #heroDia circle.obj:nth-of-type(4){animation-delay:1.39s}
-#home.on #heroDia circle.obj:nth-of-type(5){animation-delay:1.52s}
-#home.on #heroDia circle.obj:nth-of-type(6){animation-delay:1.65s}
-#home.on #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
-  animation:tl-draw 1s var(--ease) 2s forwards}
-#home.on #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
-  animation:tl-draw .7s var(--ease) 2.6s forwards}
-#home.on #heroDia .arw,#home.on #heroDia .dt,#home.on #heroDia .dt-s,#home.on #heroDia .ct{
-  opacity:0;animation:tl-rise .55s var(--ease) 2.75s forwards}
+/* hero 工程圖描繪：只在第一次進站播（#home.intro），之後回主頁直接就位 */
+#home.on.intro #heroDia .cl{opacity:0;animation:tl-fade .3s ease both}
+#home.on.intro #heroDia .cl:nth-of-type(1){animation-delay:.1s;animation-duration:.4s}
+#home.on.intro #heroDia .cl:nth-of-type(2){animation-delay:.16s}
+#home.on.intro #heroDia .cl:nth-of-type(3){animation-delay:.2s}
+#home.on.intro #heroDia .cl:nth-of-type(4){animation-delay:.24s}
+#home.on.intro #heroDia .cl:nth-of-type(5){animation-delay:.28s}
+#home.on.intro #heroDia .cl:nth-of-type(6){animation-delay:.32s}
+#home.on.intro #heroDia .cl:nth-of-type(7){animation-delay:.36s}
+#home.on.intro #heroDia rect.obj{--dl:1000;stroke-dasharray:1000;stroke-dashoffset:1000;
+  animation:tl-draw .7s var(--ease) .2s forwards}
+#home.on.intro #heroDia circle.obj{--dl:126;stroke-dasharray:126;stroke-dashoffset:126;
+  animation:tl-draw .35s var(--ease) both}
+#home.on.intro #heroDia circle.obj:nth-of-type(1){animation-delay:.5s}
+#home.on.intro #heroDia circle.obj:nth-of-type(2){animation-delay:.57s}
+#home.on.intro #heroDia circle.obj:nth-of-type(3){animation-delay:.64s}
+#home.on.intro #heroDia circle.obj:nth-of-type(4){animation-delay:.71s}
+#home.on.intro #heroDia circle.obj:nth-of-type(5){animation-delay:.78s}
+#home.on.intro #heroDia circle.obj:nth-of-type(6){animation-delay:.85s}
+#home.on.intro #heroDia .dim{--dl:1500;stroke-dasharray:1500;stroke-dashoffset:1500;
+  animation:tl-draw .5s var(--ease) 1s forwards}
+#home.on.intro #heroDia .cal{--dl:200;stroke-dasharray:200;stroke-dashoffset:200;
+  animation:tl-draw .4s var(--ease) 1.3s forwards}
+#home.on.intro #heroDia .arw,#home.on.intro #heroDia .dt,
+#home.on.intro #heroDia .dt-s,#home.on.intro #heroDia .ct{
+  opacity:0;animation:tl-fade .3s ease 1.5s forwards}
+/* 沒在 intro 時（平常回主頁）：hero 圖直接顯示完整狀態 */
+#home.on:not(.intro) #heroDia .cl{opacity:1}
+#home.on:not(.intro) #heroDia rect.obj,
+#home.on:not(.intro) #heroDia circle.obj,
+#home.on:not(.intro) #heroDia .dim,
+#home.on:not(.intro) #heroDia .cal{stroke-dashoffset:0}
+#home.on:not(.intro) #heroDia .arw,#home.on:not(.intro) #heroDia .dt,
+#home.on:not(.intro) #heroDia .dt-s,#home.on:not(.intro) #heroDia .ct{opacity:1}
 
-/* 專案列表：逐列浮現 */
-#dlList .dlRow{animation:tl-rise .75s var(--ease) both}
-#dlList .dlRow:nth-child(2){animation-delay:.09s}
-#dlList .dlRow:nth-child(3){animation-delay:.18s}
-#dlList .dlRow:nth-child(4){animation-delay:.27s}
-#dlList .dlRow:nth-child(5){animation-delay:.36s}
-#dlList .dlRow:nth-child(n+6){animation-delay:.44s}
+/* 專案列表：逐列浮現，封頂在第 5 列避免長列表等太久 */
+#dlList .dlRow{animation:tl-rise .32s var(--ease) both}
+#dlList .dlRow:nth-child(2){animation-delay:.04s}
+#dlList .dlRow:nth-child(3){animation-delay:.08s}
+#dlList .dlRow:nth-child(4){animation-delay:.12s}
+#dlList .dlRow:nth-child(n+5){animation-delay:.16s}
 
-@keyframes tl-pop{0%{transform:scale(1.4);color:var(--acc-t)}70%{transform:scale(.92)}100%{transform:none}}
-.stats .v.tick{animation:tl-pop .5s var(--ease)}
+@keyframes tl-pop{from{transform:scale(1.15);color:var(--acc-t)}to{transform:none}}
+.stats .v.tick{animation:tl-pop .28s var(--ease)}
 
 button:active:not(:disabled){transform:translateY(.5px) scale(.975)}
-.rail button:active:not(:disabled),.viewbar button:active:not(:disabled){transform:scale(.92)}
+.rail button:active:not(:disabled),.viewbar button:active:not(:disabled){transform:scale(.95)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}
   *,#home.on #homeIn>*,#home.on #heroDia *{animation:none!important;opacity:1!important;
@@ -1520,9 +1520,8 @@ function _ring(pos,axis,geo,o0,grow,dur,delay,col){
 }
 function pulseAt(pos,axis){
   if(REDUCE_MO||!pos)return;
-  _ring(pos,axis,DISC_GEO,0.30,6,340,0,0x9fc6ff);      // 中心一閃
-  _ring(pos,axis,RING_GEO,0.7,15,720,0,0x7ab0ff);      // 主環
-  _ring(pos,axis,RING_GEO,0.4,24,900,110,0x6fa8f5);    // 慢一拍的外環
+  _ring(pos,axis,DISC_GEO,0.28,4,220,0,0x9fc6ff);      // 中心一閃
+  _ring(pos,axis,RING_GEO,0.6,9,380,0,0x7ab0ff);       // 一圈回饋，就這樣，快速確實
 }
 function stepPulses(){
   const now=performance.now();
@@ -1552,12 +1551,13 @@ function tweenCam(to,dur){
     cam.target.copy(to.target);applyCam();return;}
   camAnim={a:{theta:cam.theta,phi:cam.phi,dist:cam.dist,target:cam.target.clone()},
            b:{theta:to.theta,phi:to.phi,dist:to.dist,target:to.target.clone()},
-           t0:performance.now(),dur:dur||820};
+           t0:performance.now(),dur:dur||420};
 }
 function stepCam(){
   if(!camAnim)return;
   const p=Math.min(1,(performance.now()-camAnim.t0)/camAnim.dur);
-  const e=1-Math.pow(1-p,5);                    // easeOutQuint：起步快、收尾綿長有份量
+  // easeInOutCubic：相機是畫面上的東西在動，不是進退場，兩頭都緩
+  const e=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
   const a=camAnim.a,b=camAnim.b;
   let dth=b.theta-a.theta; dth=((dth%(2*Math.PI))+3*Math.PI)%(2*Math.PI)-Math.PI;
   cam.theta=a.theta+dth*e;
@@ -1569,7 +1569,7 @@ function stepCam(){
 }
 const VIEWS={iso:[-0.92,1.0],top:[-Math.PI/2,0.02],front:[-Math.PI/2,Math.PI/2]};
 function setView(k){const v=VIEWS[k];if(!v)return;
-  tweenCam({theta:v[0],phi:v[1],dist:cam.dist,target:cam.target.clone()},720);
+  tweenCam({theta:v[0],phi:v[1],dist:cam.dist,target:cam.target.clone()},380);
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===k));}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 
@@ -2802,7 +2802,7 @@ function fitView(instant){
     d=Math.max(60,box.getSize(V3()).length()*1.8);
   }
   if(instant){camAnim=null;cam.target.copy(tgt);cam.dist=d;applyCam();return;}
-  tweenCam({theta:cam.theta,phi:cam.phi,dist:d,target:tgt},780);}
+  tweenCam({theta:cam.theta,phi:cam.phi,dist:d,target:tgt},420);}
 el('fit').onclick=fitView;
 
 addEventListener('keydown',e=>{
@@ -3165,14 +3165,19 @@ const Ask=(function(){
 })();
 
 /* ── 主頁 ↔ 工作台 ── */
-let atHome=true, _homeT=null;
+let atHome=true, _homeT=null, _introDone=false;
 function showHome(){
   saveLocal();
   atHome=true;
   clearTimeout(_homeT);
   renderDocs();
-  el('home').classList.add('on');                     // 主頁淡入蓋住工作台
-  _homeT=setTimeout(()=>document.body.classList.add('home'),640);  // 淡入完才收掉工作台
+  const home=el('home');
+  if(!_introDone){                                    // hero 描繪只在第一次進站播，之後回主頁直接就位
+    _introDone=true;home.classList.add('intro');
+    setTimeout(()=>home.classList.remove('intro'),1900);
+  }
+  home.classList.add('on');                           // 主頁淡入蓋住工作台
+  _homeT=setTimeout(()=>document.body.classList.add('home'),300);  // 淡入完才收掉工作台
 }
 function enterWorkbench(id){
   if(id&&!openDoc(id))return;
@@ -3522,10 +3527,6 @@ loadManifold().then(()=>{
 (function loop(){requestAnimationFrame(loop);
   if(markDirty){markDirty=false;rebuildMarkers();}
   stepCam();stepPulses();updateGizmo();placeSelPanel();
-  if(!REDUCE_MO){const now=performance.now();
-    if(selPart)MAT_SEL.emissiveIntensity=0.3+0.24*Math.sin(now*0.0038);
-    if(ghost!==null){const g=0.52+0.18*Math.sin(now*0.005);
-      MAT_GHOST.opacity=g;MAT_GHOST_FREE.opacity=g*0.5;}}
   renderer.render(scene,camera);})();
 })();
 </script>
