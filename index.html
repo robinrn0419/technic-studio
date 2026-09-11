@@ -1969,8 +1969,13 @@ function updateGhost(e){
   }
   if(tgt){
     ghostSnap=tgt;ghostHole=pick;
-    const host=byId(tgt.partId), wA=holeWorld(host,tgt.hole);
-    const toCam=V3().subVectors(camera.position,wA.pos);
+    const host=byId(tgt.partId);
+    // 朝向鏡頭的方向固定用鏡頭本身的視線方向，不要用「這個孔的世界座標到鏡頭」
+    // 算——後者每換一個孔位置就不一樣，即使兩個孔在同一支零件、同一個面上，
+    // 算出來的方向也會有微小差異，靠近垂直視角時這個差異足以讓 dot product
+    // 變號，導致吸附換孔的瞬間零件整個朝向跳一下。鏡頭視線方向對同一幀裡的
+    // 每個孔都一樣，只有實際轉鏡頭才會變，手感穩定很多。
+    const toCam=camera.getWorldDirection(V3()).negate();
     const via=faceToward(g,pick,toCam.clone().negate());
     g.link={hostId:host.id,hostSocket:faceToward(host,tgt.hole,toCam),
             viaId:g.id,
@@ -3328,7 +3333,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12e';
+const BUILD='2026.09.12f';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
