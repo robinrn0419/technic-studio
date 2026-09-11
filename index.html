@@ -121,7 +121,8 @@ kbd{font-family:var(--mono);font-size:9px;color:var(--dim);border:1px solid var(
   font-weight:600;padding:6px 10px 10px}
 .prow{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;
   background:transparent;border:1px solid transparent;border-radius:var(--r);
-  cursor:pointer;text-align:left;transition:background .2s var(--ease)}
+  cursor:pointer;text-align:left;
+  transition:background .2s var(--ease),border-color .2s var(--ease)}
 .prow:hover{background:var(--raise);border-color:var(--hair-2)}
 .prow .lbl{font-size:12px;color:var(--muted);white-space:nowrap;flex:0 0 auto;width:62px}
 .prow:hover .lbl{color:var(--text)}
@@ -192,7 +193,8 @@ input[type=range]:disabled{opacity:.25}
 .row > *{flex:1}
 .row button{padding:7px 6px;font-size:11.5px}
 .chk{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted);
-  cursor:pointer;margin-top:13px}
+  cursor:pointer;margin-top:13px;transition:color .2s var(--ease)}
+.chk:hover{color:var(--text)}
 .chk input{accent-color:var(--acc)}
 .danger{background:transparent;color:var(--muted)}
 .danger:hover:not(:disabled){color:#e0685f;background:rgba(224,90,80,.12)}
@@ -219,12 +221,25 @@ input[type=range]:disabled{opacity:.25}
 .actionbar .msg .w{color:#e0a13c}
 .actionbar .btns{display:flex;gap:6px;flex:0 0 auto}
 
-#toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:64px;
-  display:none;max-width:min(560px,92vw);background:var(--panel);
+#toast{position:fixed;z-index:30;left:50%;bottom:64px;
+  max-width:min(560px,92vw);background:var(--panel);
   border:1px solid var(--hair-2);border-radius:8px;padding:14px 18px;
   box-shadow:0 14px 40px rgba(0,0,0,.5);font-size:12.5px;line-height:1.75;
-  color:var(--text);white-space:pre-line}
+  color:var(--text);white-space:pre-line;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translateX(-50%) translateY(8px) scale(.98);
+  transition:opacity .22s var(--ease),transform .22s var(--ease),visibility 0s .22s}
+#toast.show{opacity:1;visibility:visible;pointer-events:auto;
+  transform:translateX(-50%);transition:opacity .22s var(--ease),transform .22s var(--ease)}
 #toast.bad{border-color:#a8564d}
+#ghosthint{position:fixed;left:50%;bottom:22px;
+  background:#1e2024;border:1px solid #3a3d44;
+  color:#c8ccd2;padding:8px 16px;border-radius:8px;font-size:13px;z-index:40;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translateX(-50%) translateY(8px);
+  transition:opacity .2s var(--ease),transform .2s var(--ease),visibility 0s .2s}
+#ghosthint.show{opacity:1;visibility:visible;pointer-events:auto;
+  transform:translateX(-50%);transition:opacity .2s var(--ease),transform .2s var(--ease)}
 #angBadge{position:fixed;z-index:19;display:none;pointer-events:none;
   transform:translate(-50%,-50%);font-family:var(--mono);font-size:20px;font-weight:300;
   color:var(--text);background:var(--panel);border:1px solid var(--hair-2);
@@ -251,11 +266,15 @@ body.show-intro #empty{display:flex!important}
 #empty.err .intro{border-color:#a8564d}
 #empty.err h2{color:#e0685f}
 /* ── 對話框（取代被瀏覽器封鎖的 prompt / confirm） ── */
-#askWrap{position:fixed;inset:0;z-index:80;display:none;
-  background:rgba(10,11,13,.74);backdrop-filter:blur(3px)}
-#askWrap.on{display:flex;align-items:center;justify-content:center}
+#askWrap{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,11,13,.74);backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .2s var(--ease),visibility 0s .2s}
+#askWrap.on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s var(--ease)}
 #askCard{width:min(420px,calc(100vw - 32px));background:var(--panel);
-  border:1px solid var(--hair-2);border-radius:8px;padding:30px 30px 22px}
+  border:1px solid var(--hair-2);border-radius:8px;padding:30px 30px 22px;
+  transform:scale(.96) translateY(6px);transition:transform .22s var(--ease)}
+#askWrap.on #askCard{transform:none}
 #askCard h4{margin:0 0 6px;font-size:19px;font-weight:500;letter-spacing:-.012em}
 #askBody{margin:0 0 22px;font-size:13px;line-height:1.8;color:var(--muted)}
 #askBody:empty{display:none}
@@ -481,12 +500,16 @@ body:not(.home) .dock{animation:tl-slide .3s var(--ease) both}
   .dlThumb{width:54px;height:36px}
 }
 /* ── 給作者建議 ── */
-#fbWrap{position:fixed;inset:0;z-index:60;display:none;
-  background:rgba(10,11,13,.72);backdrop-filter:blur(3px)}
-#fbWrap.on{display:flex;align-items:center;justify-content:center}
+#fbWrap{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,11,13,.72);backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .2s var(--ease),visibility 0s .2s}
+#fbWrap.on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s var(--ease)}
 #fbCard{width:min(520px,calc(100vw - 32px));background:var(--panel);
   border:1px solid var(--hair);border-radius:8px;padding:26px 26px 20px;
-  box-shadow:0 1px 0 var(--hair-2) inset, 0 18px 44px rgba(0,0,0,.42)}
+  box-shadow:0 1px 0 var(--hair-2) inset, 0 18px 44px rgba(0,0,0,.42);
+  transform:scale(.96) translateY(6px);transition:transform .22s var(--ease)}
+#fbWrap.on #fbCard{transform:none}
 #fbCard h3{margin:0 0 4px;font-size:17px;font-weight:600;letter-spacing:.01em}
 #fbCard .sub{margin:0 0 18px;font-size:12px;color:var(--muted);line-height:1.7}
 #fbCard label{display:block;font-family:var(--mono);font-size:9px;
@@ -664,9 +687,7 @@ button:active:not(:disabled){transform:translateY(.5px) scale(.975)}
   依序試插正版插銷，找出「要出點力才進得去、進去後不會自己掉」的那一個。</p>
 </div>
 
-<div id="ghosthint" style="display:none;position:fixed;left:50%;bottom:22px;
-  transform:translateX(-50%);background:#1e2024;border:1px solid #3a3d44;
-  color:#c8ccd2;padding:8px 16px;border-radius:8px;font-size:13px;z-index:40">
+<div id="ghosthint">
   <b id="ghostvar">—</b>　·　滾輪轉方向　·　F 翻面　·　點一下放下　·　丟垃圾桶取消
 </div>
 
@@ -2005,7 +2026,7 @@ function startGhost(defKey){
   world.add(p.obj);parts.push(p);
   ghost=p.id;ghostSnap=null;ghostHole=null;ghostFlip=false;ghostRoll=0;ghostEvt=null;
   p.obj.children.forEach(o=>{if(o.isMesh)o.material=partMat(p);});
-  el('ghosthint').style.display='block';
+  el('ghosthint').classList.add('show');
   el('trash').classList.add('on');
   layout();refresh();
 }
@@ -2028,7 +2049,7 @@ function commitGhost(){
   else g.layer=Math.round(g.obj.position.z/TH);
   const hostLink=g.link&&byId(g.link.hostId);
   ghost=null;ghostSnap=null;selPart=g.id;sel=[];
-  el('ghosthint').style.display='none';
+  el('ghosthint').classList.remove('show');
   el('trash').classList.remove('on','open');
   if(parts.length===1)fitView();
   layout();refresh();
@@ -2039,7 +2060,7 @@ function commitGhost(){
 function cancelGhost(){
   const g=ghost?byId(ghost):null;
   ghost=null;ghostSnap=null;
-  el('ghosthint').style.display='none';
+  el('ghosthint').classList.remove('show');
   el('trash').classList.remove('on','open');
   if(!g)return;
   const i=parts.indexOf(g); if(i>=0)parts.splice(i,1);
@@ -3333,7 +3354,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12f';
+const BUILD='2026.09.12g';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
@@ -3442,8 +3463,8 @@ function auditTris(tris){
 }
 function toast(msg,bad){
   const t=el('toast');t.textContent=msg;
-  t.className=bad?'bad':'';t.style.display='block';
-  clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},10000);
+  t.className=(bad?'bad ':'')+'show';
+  clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show');},10000);
 }
 /* ── 布林聯集：manifold-3d（WASM） ────────────────────
    零件之間的交界要真的融成一體，只能靠布林運算。
