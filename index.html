@@ -1931,15 +1931,16 @@ function updateGhost(e){
       g.obj.position.copy(hit);
       g.obj.quaternion.setFromAxisAngle(V3(0,0,1),ghostRoll);
       g.obj.updateMatrixWorld(true);
-      // 零件的每個孔 × 附近的每個空孔，取最近的一對
+      // 吸附目標固定是 ref（游標正下方那個孔）——零件只挑自己哪個孔去對齊 ref，
+      // 不要整個零件、整片候選孔一起搜「全域最近的一對」。之前那樣搜，常常是
+      // 零件上其他孔跟旁邊另一個候選孔剛好更近，於是吸到游標底下以外的孔，
+      // 使用者完全猜不到會吸到哪裡。
       let bd=1e9;
       usableHoles(g).forEach(gh=>{
-        const gp=holeWorld(g,gh).pos;
-        cand.forEach(c=>{
-          const d=gp.distanceToSquared(c.pos);
-          if(d<bd){bd=d;tgt=c;pick=gh;}
-        });
+        const d=holeWorld(g,gh).pos.distanceToSquared(ref.pos);
+        if(d<bd){bd=d;pick=gh;}
       });
+      tgt=ref;
       if(bd>snapD2){tgt=null;pick=null;}
     }
   }
@@ -3304,7 +3305,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12c';
+const BUILD='2026.09.12d';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
