@@ -1908,7 +1908,16 @@ function updateGhost(e){
   const g=ghost?byId(ghost):null; if(!g)return;
   if(e){ghostEvt=e;setRay(e);} else if(ghostEvt){setRay(ghostEvt);} else return;
 
-  const cand=freeHolesNearRay(2500);        // 50mm 內的候選孔
+  // 吸附距離跟著鏡頭遠近縮放，維持大約固定的「螢幕感覺」而不是死的世界座標 mm——
+  // 常見 3D/CAD 工具（Blender、ArcGIS 等）的 snap tolerance 都是用螢幕像素定義，
+  // 不是固定世界距離；這裡沒有直接算螢幕投影，改用鏡頭距離近似：210mm 是預設
+  // 鏡頭距離，15mm 吸附半徑是那個距離下調出來的手感基準，拉近鏡頭時吸附範圍跟著
+  // 縮小、拉遠時跟著放大，避免「放大看零件時吸到很遠的孔」。
+  const zoomK=cam.dist/210;
+  const searchD2=Math.max(400,Math.min(10000,2500*zoomK*zoomK));
+  const snapD2=Math.max(36,Math.min(900,225*zoomK*zoomK));
+
+  const cand=freeHolesNearRay(searchD2);    // 候選孔搜尋半徑
   let tgt=null, pick=null;
   if(cand.length){
     // 先把零件自由擺在游標處（深度對齊最近的候選孔），再比對每一對孔
@@ -1931,7 +1940,7 @@ function updateGhost(e){
           if(d<bd){bd=d;tgt=c;pick=gh;}
         });
       });
-      if(bd>225){tgt=null;pick=null;}       // 15mm 外就不吸附（原本 30mm 太黏，常吸到不想要的孔）
+      if(bd>snapD2){tgt=null;pick=null;}
     }
   }
   if(tgt){
@@ -3295,7 +3304,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.12b';
+const BUILD='2026.09.12c';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
