@@ -3165,7 +3165,7 @@ const Ask=(function(){
 })();
 
 /* ── 主頁 ↔ 工作台 ── */
-let atHome=true, _homeT=null, _introDone=false;
+let atHome=true, _homeT=null, _introDone=false, introT0=null;
 function showHome(){
   saveLocal();
   atHome=true;
@@ -3174,7 +3174,7 @@ function showHome(){
   const home=el('home');
   if(!_introDone){                                    // hero 描繪只在第一次進站播，之後回主頁直接就位
     _introDone=true;home.classList.add('intro');
-    setTimeout(()=>home.classList.remove('intro'),1900);
+    introT0=performance.now();                        // 用主迴圈檢查解除，不靠背景分頁會被延後的 setTimeout
   }
   home.classList.add('on');                           // 主頁淡入蓋住工作台
   _homeT=setTimeout(()=>document.body.classList.add('home'),300);  // 淡入完才收掉工作台
@@ -3525,6 +3525,8 @@ loadManifold().then(()=>{
   if(atHome&&typeof renderDocs==='function')renderDocs();
 });
 (function loop(){requestAnimationFrame(loop);
+  // rAF 只在分頁真的在畫面上跑，用它來解除 .intro 不會被背景分頁的計時器節流卡住
+  if(introT0!==null&&performance.now()-introT0>1900){introT0=null;el('home').classList.remove('intro');}
   if(markDirty){markDirty=false;rebuildMarkers();}
   stepCam();stepPulses();updateGizmo();placeSelPanel();
   renderer.render(scene,camera);})();
