@@ -997,19 +997,27 @@ const el=id=>document.getElementById(id);
     const home=document.getElementById('home'), homeIn=document.getElementById('homeIn');
     const hr=home?home.getBoundingClientRect():null;
     const hir=homeIn?homeIn.getBoundingClientRect():null;
+    const hcs=home?getComputedStyle(home):null;
+    const bcs=getComputedStyle(document.body);
+    const hcs2=getComputedStyle(document.documentElement);
     return{
       t:(performance.now()-t0).toFixed(0),
       iw:innerWidth,dpr:devicePixelRatio,
       hw:hr?hr.width.toFixed(0):'-',hiw:hir?hir.width.toFixed(0):'-',
       styleW:home?home.style.width:'-',
+      compW:hcs?hcs.width:'-',
+      tf:hcs?hcs.transform:'-',zm:hcs?hcs.zoom:'-',
+      bodyTf:bcs.transform,bodyZm:bcs.zoom,
+      htmlTf:hcs2.transform,htmlZm:hcs2.zoom,
       op:home?getComputedStyle(home).opacity:'-',
       cls:home?home.className:'-'
     };
   }
   function tick(){
     const r=sample();log.push(r);
-    const last=log.slice(-9).map(x=>
-      x.t+'ms iw='+x.iw+' dpr='+x.dpr+' hw='+x.hw+' hiw='+x.hiw+
+    const last=log.slice(-6).map(x=>
+      x.t+'ms iw='+x.iw+' hw='+x.hw+' hiw='+x.hiw+' compW='+x.compW+
+      '\n  tf='+x.tf+' zm='+x.zm+' bodyTf='+x.bodyTf+' htmlTf='+x.htmlTf+
       '\n  styleW='+x.styleW+' op='+x.op+' cls='+x.cls
     ).join('\n');
     box.textContent='[TL debug2 · 5 秒後自動停]\n'+last;
@@ -3330,7 +3338,7 @@ document.addEventListener('keydown',e=>{
 },true);
 
 /* 版本印記：用來確認打開的是不是最新版 */
-const BUILD='2026.09.11f';
+const BUILD='2026.09.11g';
 el('build').textContent='版本 '+BUILD;
 console.log('TrunnionLab 版本 '+BUILD);
 setAuthState(null);
