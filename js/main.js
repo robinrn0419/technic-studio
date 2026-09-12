@@ -2,7 +2,7 @@ import {toast} from './toast.js';
 import {Ask} from './dialogs.js';
 import {syncHowto} from './howto.js';
 import './feedback.js';
-import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,setSkipCuts} from './geometry.js';
+import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,SHORT,cbDia,cbDep,thumb,barSolidSpec,partPieces,setSkipCuts} from './geometry.js';
 import {dl,trisOf,writeSTL,auditTris,loadManifold,getMF,unionTris} from './stl-export.js';
 
 (function(){
