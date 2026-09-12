@@ -2,7 +2,8 @@ import {toast} from './toast.js';
 import {Ask} from './dialogs.js';
 import {syncHowto} from './howto.js';
 import './feedback.js';
-import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,setMF,setSkipCuts} from './geometry.js';
+import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,setSkipCuts} from './geometry.js';
+import {dl,trisOf,writeSTL,auditTris,loadManifold,getMF,unionTris} from './stl-export.js';
 
 (function(){
 'use strict';
@@ -161,7 +162,7 @@ const GEO_CACHE=new Map();
 let SKIP_CUTS=false;                          // restore 時先不挖側孔，之後再逐格補
 function geoSig(p){
   return p.defKey+':'+(p.hmode?JSON.stringify(p.hmode):'')
-       +'|'+cbDia().toFixed(2)+'|'+cbDep().toFixed(2)+'|'+((MF&&!SKIP_CUTS)?'m':'-');
+       +'|'+cbDia().toFixed(2)+'|'+cbDep().toFixed(2)+'|'+((getMF()&&!SKIP_CUTS)?'m':'-');
 }
 function buildMeshes(p){
   p.obj.children.filter(o=>o.isMesh).forEach(o=>p.obj.remove(o));
@@ -254,7 +255,7 @@ function restore(json){
    每格一個 requestAnimationFrame，讓瀏覽器有空檔畫面、不會凍住幾秒。
    幾何有快取，所以第二次開同一份專案時這一步幾乎瞬間完成。 */
 function cutSideHolesSoon(){
-  if(!MF)return;                              // 模組還沒好；載好時會再呼叫一次
+  if(!getMF())return;                         // 模組還沒好；載好時會再呼叫一次
   const mine=cutGen, q=parts.filter(p=>p&&p.kind!=='brace');
   let i=0;
   (function step(){
@@ -1397,9 +1398,6 @@ addEventListener('keydown',e=>{
 });
 
 /* ── 存讀檔 ── */
-function dl(blob,name){
-  const u=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),4000);}
 /* ── 存檔 ──
    檔案格式外面包一層信封，帶版本號與名稱；
    scene 內容就是 snapshot() 的原樣，之後接雲端可直接沿用。   */
@@ -1810,93 +1808,8 @@ if(window.__cloud){ window.__cloud.onAuth(onCloudAuth); }
 else { window.__cloudReady=()=>window.__cloud.onAuth(onCloudAuth); }
 
 /* ── STL ── */
-function trisOf(geo,mat){
-  const g=geo.index?geo.toNonIndexed():geo,pos=g.attributes.position,out=[];
-  const a=V3(),b=V3(),c=V3();
-  for(let i=0;i<pos.count;i+=3){
-    a.fromBufferAttribute(pos,i).applyMatrix4(mat);
-    b.fromBufferAttribute(pos,i+1).applyMatrix4(mat);
-    c.fromBufferAttribute(pos,i+2).applyMatrix4(mat);
-    out.push([a.clone(),b.clone(),c.clone()]);}
-  return out;}
-function writeSTL(tris,name){
-  const buf=new ArrayBuffer(84+tris.length*50),dv=new DataView(buf);
-  dv.setUint32(80,tris.length,true);
-  let o=84;const n=V3(),ab=V3(),ac=V3();
-  tris.forEach(t=>{
-    ab.subVectors(t[1],t[0]);ac.subVectors(t[2],t[0]);
-    n.crossVectors(ab,ac).normalize();
-    dv.setFloat32(o,n.x,true);dv.setFloat32(o+4,n.y,true);dv.setFloat32(o+8,n.z,true);o+=12;
-    t.forEach(v=>{dv.setFloat32(o,v.x,true);dv.setFloat32(o+4,v.y,true);dv.setFloat32(o+8,v.z,true);o+=12;});
-    dv.setUint16(o,0,true);o+=2;});
-  dl(new Blob([buf],{type:'model/stl'}),name);}
 const holeD=()=>{const v=parseFloat(el('comp').value);return HOLE+(isNaN(v)?0:v);};
 
-// 水密檢查：每條有向邊只能出現一次，且必須有反向邊配對
-function auditTris(tris){
-  const K=v=>v.x.toFixed(3)+','+v.y.toFixed(3)+','+v.z.toFixed(3);
-  const m=new Map(); let deg=0;
-  tris.forEach(t=>{
-    for(let e=0;e<3;e++){
-      const a=K(t[e]),b=K(t[(e+1)%3]);
-      if(a===b){deg++;continue;}
-      const k=a+'>'+b; m.set(k,(m.get(k)||0)+1);
-    }});
-  let open=0,dup=0;
-  m.forEach((c,k)=>{
-    if(c>1)dup++;
-    const i=k.indexOf('>');
-    if(!m.has(k.slice(i+1)+'>'+k.slice(0,i)))open++;});
-  return {tri:tris.length,open:open,dup:dup,deg:deg};
-}
-/* ── 布林聯集：manifold-3d（WASM） ────────────────────
-   零件之間的交界要真的融成一體，只能靠布林運算。
-   第一次匯出時才載入，載不到就退回「多個重疊實體」。   */
-let MF=null,mfPending=null;
-function loadManifold(){
-  if(MF)return Promise.resolve(MF);
-  if(mfPending)return mfPending;
-  mfPending=import('https://cdn.jsdelivr.net/npm/manifold-3d@2.3.1/manifold.js')
-    .then(m=>m.default())
-    .then(w=>{w.setup();MF=w;setMF(w);return w;});
-  return mfPending;
-}
-// 三角形湯 → 共用頂點的索引網格（布林運算的前提）
-function indexTris(tris){
-  const map=new Map(),verts=[],idx=[];
-  const K=v=>Math.round(v.x*1e4)+','+Math.round(v.y*1e4)+','+Math.round(v.z*1e4);
-  tris.forEach(t=>t.forEach(v=>{
-    const k=K(v);let i=map.get(k);
-    if(i===undefined){i=verts.length/3;map.set(k,i);verts.push(v.x,v.y,v.z);}
-    idx.push(i);}));
-  return {vertProperties:new Float32Array(verts),triVerts:new Uint32Array(idx)};
-}
-function toSolid(w,tris){
-  const d=indexTris(tris);
-  const mesh=new w.Mesh({numProp:3,vertProperties:d.vertProperties,triVerts:d.triVerts});
-  mesh.merge();
-  return new w.Manifold(mesh);
-}
-function solidToTris(m){
-  const mesh=m.getMesh(),vp=mesh.vertProperties,tv=mesh.triVerts,np=mesh.numProp||3,out=[];
-  for(let i=0;i<tv.length;i+=3){
-    const t=[];
-    for(let k=0;k<3;k++){const b=tv[i+k]*np;t.push(V3(vp[b],vp[b+1],vp[b+2]));}
-    out.push(t);}
-  return out;
-}
-function unionTris(w,groups){
-  const solids=groups.map(g=>toSolid(w,g));
-  let u;
-  try{
-    u=solids.length===1?solids[0]:w.Manifold.union(solids);
-    const out=solidToTris(u);
-    return out;
-  } finally {
-    solids.forEach(sd=>{ if(sd!==u){try{sd.delete();}catch(e){}} });
-    if(u){try{u.delete();}catch(e){}}
-  }
-}
 function busy(on){
   el('expFused').disabled=on||!parts.length;
   el('expParts').disabled=on||!parts.length;
@@ -1956,8 +1869,8 @@ el('expParts').onclick=()=>{
       const gs=partPieces(p,hd,0).map(pc=>trisOf(pc.geo,pc.mat));
       const tag=p.kind==='brace'?'brace-'+p.span.toFixed(1)+'mm':p.defKey;
       const name=String(i+1).padStart(2,'0')+'-'+tag+'.stl';
-      if(gs.length===1||!MF){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); }
-      else { try{ writeSTL(unionTris(MF,gs),name); }
+      if(gs.length===1||!getMF()){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); }
+      else { try{ writeSTL(unionTris(getMF(),gs),name); }
              catch(e){ gs.forEach(g=>tris.push.apply(tris,g)); writeSTL(tris,name); } }
     },i*350);});};
 
