@@ -542,8 +542,10 @@ function partPieces(p,holeD,grow){
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
     const yTab=ARC_EMBED-rw;
     tab.translate(0,yTab,arc.dz);
+    // 楔形本體的寬度也要涵蓋安裝片兩端外伸的 ARC_EXT，不然安裝片的延伸段跟支架
+    // 會伸到楔形側面以外的空氣裡（沒有實體可以融合/撐著）。
     const out=[{geo:tab,mat:new THREE.Matrix4()},
-               {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+               {geo:arcWedgeGeo(arc.radius,arc.len+2*ARC_EXT),mat:new THREE.Matrix4()}];
     // 兩端各加一塊三角形支架，補強安裝片跟楔形背面之間的接合。整塊都卡在安裝片
     // 自己的厚度範圍內（Z 落在 dz±rw，跟安裝片一樣高，不會更高也不會更低），
     // 而且只出現在 ARC_EXT 那段沒有孔的延伸區——每個孔的正上方/正下方永遠淨空，
