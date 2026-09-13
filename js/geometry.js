@@ -221,18 +221,18 @@ DEFS['snapL']=defFrom([
 
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
 // 底面平放，弧面連接兩者。安裝片是標準攤平方向（孔軸垂直 Z，跟其他所有零件
-// 一致）的一小段樑，明顯離開背面 ARC_GAP 這麼遠（不是貼著/埋在楔形裡），
-// 兩端各用一塊三角支架撐住——支架整塊卡在安裝片自己的厚度範圍內（Z 落在
-// dz±R，不會比安裝片更高或更低），所以沿著安裝片全長，正上方、正下方永遠
-// 淨空，其他零件的插銷可以直接貫穿，不會被撐架擋住。支架根部（貼楔形那端）
-// 寬度吃滿 ARC_EXT 那段沒有孔的延伸區，盡量加粗承受衝擊力（這是打架用的
-// 零件，斷了就沒用了）。安裝片兩端外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b
-// 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去，
-// 剛好也是支架落地生根的地方。
+// 一致）的一小段樑，離開背面 ARC_GAP 這麼遠（不是貼著/埋在楔形裡），兩端各用
+// 一塊實心方柱撐住——柱子從頭到尾都一樣粗（不是收尖的三角片，之前那版尖端
+// 是最脆弱的地方，一撞就斷），整塊卡在安裝片自己的厚度範圍內（Z 落在 dz±R，
+// 不會比安裝片更高或更低），所以沿著安裝片全長，正上方、正下方永遠淨空，其他
+// 零件的插銷可以直接貫穿，不會被撐柱擋住。柱子寬度吃滿 ARC_EXT 那段沒有孔的
+// 延伸區，跟安裝片一樣厚——是打架用的零件，撐斷了就沒用了，寧可粗一點。
+// 安裝片兩端外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b 的橫樑做法——兩端不是
+// 齊著最後一個孔收尾，而是多一小段實心延伸出去，剛好也是柱子落地生根的地方。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
-const ARC_EXT=6;      // 安裝片兩端外伸（不開孔），也是支架根部的寬度
-const ARC_GAP=10;     // 安裝片離開背面多遠（明顯拉出來，不是貼著/埋進去）
+const ARC_EXT=8;      // 安裝片兩端外伸（不開孔），也是撐柱的寬度
+const ARC_GAP=8;      // 安裝片離開背面多遠（柱子矮胖一點比細長更耐撞）
 function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
   const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
@@ -550,19 +550,16 @@ function partPieces(p,holeD,grow){
     // 楔形側面以外的空氣裡（沒有實體可以融合/撐著）。
     const out=[{geo:tab,mat:new THREE.Matrix4()},
                {geo:arcWedgeGeo(arc.radius,arc.len+2*ARC_EXT),mat:new THREE.Matrix4()}];
-    // 兩端各加一塊三角形支架，把拉出來的安裝片撐回背面。整塊都卡在安裝片自己的
-    // 厚度範圍內（Z 落在 dz±rw，不會比安裝片更高或更低）——沿著安裝片全長，
-    // 正上方、正下方永遠淨空，其他零件的插銷可以直接貫穿，不會被撐架擋住。
-    // 根部（貼楔形那端）吃滿 ARC_EXT 整段沒有孔的延伸區，盡量加粗，這是打架用的
-    // 零件，撐架斷了就沒用了。
-    const half=(arc.n-1)*MOD/2, gussetReach=ARC_EXT;
-    const zb=arc.dz-rw, zt=arc.dz+rw, yFar=yTab-rw;
+    // 兩端各加一根實心方柱，把拉出來的安裝片撐回背面——柱子從頭到尾一樣粗
+    // （不收尖），比薄三角片耐撞很多。整根都卡在安裝片自己的厚度範圍內
+    // （Z 落在 dz±rw，不會比安裝片更高或更低）——沿著安裝片全長，正上方、
+    // 正下方永遠淨空，其他零件的插銷可以直接貫穿，不會被撐柱擋住。柱子寬度
+    // 吃滿 ARC_EXT 整段沒有孔的延伸區，這是打架用的零件，寧可粗一點。
+    const half=(arc.n-1)*MOD/2;
     [-1,1].forEach(sg=>{
-      const xEnd=sg*(half+ARC_EXT), xIn=sg*(half+ARC_EXT-gussetReach);
-      const pts=sg>0
-        ? [new THREE.Vector2(xEnd,yFar), new THREE.Vector2(xEnd,0), new THREE.Vector2(xIn,0)]
-        : [new THREE.Vector2(xEnd,yFar), new THREE.Vector2(xIn,0), new THREE.Vector2(xEnd,0)];
-      out.push({geo:prismGeo(pts,zb,zt), mat:new THREE.Matrix4()});
+      const post=new THREE.BoxGeometry(ARC_EXT,ARC_GAP,2*rw);
+      post.translate(sg*(half+ARC_EXT/2), -ARC_GAP/2, arc.dz);
+      out.push({geo:post, mat:new THREE.Matrix4()});
     });
     return out;
   }
@@ -580,26 +577,6 @@ function partPieces(p,holeD,grow){
     return {geo:g, mat:new THREE.Matrix4()};
   });
   return main.concat(out);
-}
-// 任意簡單多邊形沿 Z 擠出（跟 barSolidSpec 同一套手法：2D 三角化當封蓋、
-// 繞外框生成側壁），pts 需為逆時針（從 +Z 往下看），z0<z1。
-function prismGeo(pts,z0,z1){
-  const faces=THREE.ShapeUtils.triangulateShape(pts,[]);
-  const T=[];
-  faces.forEach(f=>{
-    const A=pts[f[0]],B=pts[f[1]],C=pts[f[2]];
-    T.push(A.x,A.y,z1, B.x,B.y,z1, C.x,C.y,z1);   // 上蓋
-    T.push(A.x,A.y,z0, C.x,C.y,z0, B.x,B.y,z0);   // 下蓋，反向
-  });
-  for(let i=0;i<pts.length;i++){
-    const p0=pts[i], p1=pts[(i+1)%pts.length];
-    T.push(p0.x,p0.y,z0, p1.x,p1.y,z0, p1.x,p1.y,z1);
-    T.push(p0.x,p0.y,z0, p1.x,p1.y,z1, p0.x,p0.y,z1);
-  }
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute(T,3));
-  g.computeVertexNormals();
-  return g;
 }
 // 實心楔形，凹面朝內（像溜滑梯/quarter-pipe 的騎乘面）：局部座標 X=長度方向（沿此排孔）、
 // Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
