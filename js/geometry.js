@@ -575,11 +575,13 @@ function strutBetween(A,B,rStrut){
 // Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
 // （Z=0）都是完整的一整條邊；剖面是「整個正方形挖掉以遠角 (radius,radius) 為圓心的四分之一
 // 圓」——弧面從 (radius,0) 凹向原點、彎到 (0,radius)，原點那個直角本身仍是實心。
-// 頂端（背板最高處）切掉一小塊平面（cut），不留一條印不出來的刀鋒薄邊。
+// 頂端（背板最高處）切掉一小塊平面，留一條至少 flatW 寬的小平台，不留印不出來的刀鋒薄邊
+// ——弧面在那附近幾乎貼著背板垂直切線，所以用「切掉多少高度」來控制反而切了等於沒切
+// （切一大截高度，水平方向只移動零點幾 mm），直接指定平台寬度才有意義。
 // 跟 barSolidSpec 同一套手法（2D 剖面三角化當封蓋、繞外框生成側壁），只是擠出方向換成 X。
 function arcWedgeGeo(radius,len){
-  const cut=Math.min(radius*0.08,5);
-  const tEnd=Math.PI+Math.asin(Math.min(1,cut/radius));
+  const flatW=Math.max(1.2,Math.min(4,radius*0.06));
+  const tEnd=Math.PI+Math.acos(Math.max(-1,Math.min(1,1-flatW/radius)));
   const N=Math.max(8,Math.min(48,Math.ceil(radius/4)));
   const half=len/2;
   const prof=[new THREE.Vector2(0,0)];
@@ -590,8 +592,10 @@ function arcWedgeGeo(radius,len){
   const T=[];
   faces.forEach(f=>{
     const A=prof[f[0]],B=prof[f[1]],C=prof[f[2]];
-    T.push(-half,A.x,A.y, -half,C.x,C.y, -half,B.x,B.y);   // X=-half 封蓋
-    T.push( half,A.x,A.y,  half,B.x,B.y,  half,C.x,C.y);   // X=+half 封蓋
+    // 注意：這裡是沿 X 擠出（剖面畫在 Y-Z），跟 barSolidSpec 沿 Z 擠出（剖面畫在 X-Y）
+    // 手性相反，所以兩端封蓋哪邊要反繞的規則也跟著相反——實測驗證過（auditTris 0 open）。
+    T.push(-half,A.x,A.y, -half,B.x,B.y, -half,C.x,C.y);   // X=-half 封蓋
+    T.push( half,A.x,A.y,  half,C.x,C.y,  half,B.x,B.y);   // X=+half 封蓋
   });
   for(let i=0;i<prof.length;i++){
     const p0=prof[i], p1=prof[(i+1)%prof.length];
