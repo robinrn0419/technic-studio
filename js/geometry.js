@@ -567,7 +567,7 @@ function strutBetween(A,B,rStrut){
   const g=new THREE.CylinderGeometry(rStrut,rStrut,len,10);
   const dir=new THREE.Vector3(dx,dy,dz).normalize();
   const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
-  g.applyQuaternion(q);
+  g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q));
   g.translate((A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2);
   return g;
 }
