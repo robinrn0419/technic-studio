@@ -222,12 +222,17 @@ DEFS['snapL']=defFrom([
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
 // 孔位開在背面（一段標準樑孔位，立起來貼齊背面、一半embed進實心楔形裡讓匯出時
 // 真正融成一體，一半露在外面給其他零件接）；底面平放；弧面連接兩者。
+// 安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b 的橫樑做法——
+// 兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
+const ARC_EXT=4;
 function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
   const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
-  const base=defFrom([{xs:span(n),rot:0}],TH,'','');
+  const half=(n-1)*MOD/2;
+  const xs=[-half-ARC_EXT,...span(n),half+ARC_EXT];
+  const base=defFrom([{xs:xs,rot:0,noface:[-half-ARC_EXT,half+ARC_EXT]}],TH,'','');
   // 把樑「立起來」當背面孔位：原本攤平 XY（孔軸 Z）→ 攤平 XZ（孔軸 -Y），
   // 即 rotateX(90°) 的座標映射 (x,y,z)→(x,-z,y)，再沿 Z 平移 dz 到指定高度。
   const sockets=base.sockets.map(s=>({pos:[s.pos[0],-s.pos[2],s.pos[1]+dz],
@@ -535,7 +540,7 @@ function partPieces(p,holeD,grow){
                {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
     // 安裝片跟楔形主體之間加兩根斜撐（仿自製彎樑 B8_8b 那種轉角斜撐的作法），
     // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷。
-    const rw=b.rw||R, tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2-(rw+3));
+    const rw=b.rw||R, tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2+ARC_EXT-(rw+3));
     const bz=Math.max(2, arc.dz*0.35);   // 越靠近底部材料越厚，往下撐比較安全
     [-1,1].forEach(sg=>{
       const ex=sg*tabHalf;
