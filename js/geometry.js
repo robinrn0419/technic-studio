@@ -220,13 +220,17 @@ DEFS['snapL']=defFrom([
   '直角 3×3 · 四凸銷 · 49130','凸銷樑');
 
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
-// 孔位開在背面（一段標準樑孔位，立起來貼齊背面、一半embed進實心楔形裡讓匯出時
-// 真正融成一體，一半露在外面給其他零件接）；底面平放；弧面連接兩者。
-// 安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b 的橫樑做法——
-// 兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
+// 底面平放，弧面連接兩者。安裝片不是直接貼在背面，是「先一段細頸子、頸子末端才
+// 放大成有孔的寬樁」的兩段式（仿手繪參考圖：細頸子接進大板子，樁本身明顯凸出來，
+// 不是只埋在裡面露一點點）。安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b
+// 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
-const ARC_EXT=4;
+const ARC_EXT=4;             // 安裝片兩端外伸（不開孔）
+const ARC_NECK_LEN=6;        // 細頸子露出背面的長度
+const ARC_NECK_EMBED=2;      // 細頸子埋進楔形裡的長度（融合用）
+const ARC_NECK_RW=2.0;       // 細頸子半寬（比標準樑的 R=3.9 窄，看起來像「先收窄」）
+const ARC_TAB_EMBED=2;       // 安裝片埋進細頸子末端的長度（融合用）
 function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
   const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
@@ -234,12 +238,15 @@ function arcPlateDef(radius,len){
   const xs=[-half-ARC_EXT,...span(n),half+ARC_EXT];
   const base=defFrom([{xs:xs,rot:0,noface:[-half-ARC_EXT,half+ARC_EXT]}],TH,'','');
   // 把樑「立起來」當背面孔位：原本攤平 XY（孔軸 Z）→ 攤平 XZ（孔軸 -Y），
-  // 即 rotateX(90°) 的座標映射 (x,y,z)→(x,-z,y)，再沿 Z 平移 dz 到指定高度。
-  const sockets=base.sockets.map(s=>({pos:[s.pos[0],-s.pos[2],s.pos[1]+dz],
+  // 即 rotateX(90°) 的座標映射 (x,y,z)→(x,-z,y)；安裝片現在離開背面一段距離
+  // （細頸子接著），孔位的 Y 要跟著移出去，移動量跟 partPieces() 生成安裝片
+  // 網格時用的 shiftY 是同一個公式。
+  const shiftY=-ARC_NECK_LEN+ARC_TAB_EMBED-TH/2;
+  const sockets=base.sockets.map(s=>({pos:[s.pos[0],-s.pos[2]+shiftY,s.pos[1]+dz],
     axis:[s.axis[0],-s.axis[2],s.axis[1]]}));
   return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
     name:'弧形板 · R'+radius+' · '+len+' mm',cat:'弧形板',col:CAT_COL['弧形板'],
-    arcParams:{radius:radius,len:len,dz:dz,n:n}};
+    arcParams:{radius:radius,len:len,dz:dz,n:n,half:half}};
 }
 DEFS['arcPlate']=arcPlateDef(80,64);   // 目錄示範條目，僅供抽屜列表/縮圖使用
 function buildArcKey(radius,len){
@@ -530,21 +537,30 @@ function partPieces(p,holeD,grow){
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const arc=!brace&&DEFS[p.defKey].arcParams;
   if(arc){
-    // 背面孔位薄片：先照普通樑生成（攤平 XY、孔軸 Z），再立起來（rotateX 90°）
-    // 貼到背面、沿 Z 抬到 dz 高度——跟 arcPlateDef() 算 sockets 用的是同一個映射，
-    // 一半 embed 進楔形實心裡（匯出時真正融合），一半露在外面給其他零件接。
+    // 背面孔位薄片：先照普通樑生成（攤平 XY、孔軸 Z），再立起來（rotateX 90°）——
+    // 跟 arcPlateDef() 算 sockets 用的是同一個座標映射。安裝片不是直接貼背面，
+    // 是「細頸子先接出去、安裝片在頸子末端才放大」的兩段式，所以安裝片還要再多
+    // 沿 Y 位移 shiftY（露出來一大段，只埋進頸子末端一點點）。
     const b=bars[0];
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    tab.rotateX(Math.PI/2); tab.translate(0,0,arc.dz);
+    const shiftY=-ARC_NECK_LEN+ARC_TAB_EMBED-th/2;
+    tab.rotateX(Math.PI/2); tab.translate(0,shiftY,arc.dz);
+    // 細頸子：窄一點（rw 比標準樑小）的實心短樑，一端埋進楔形背面，另一端接安裝片。
+    const neckXs=[-arc.half,arc.half];
+    const neck=barSolid(neckXs,holeD,ARC_NECK_LEN+ARC_NECK_EMBED,null,
+      {xs:neckXs,noface:neckXs,rw:ARC_NECK_RW},null,ARC_NECK_RW);
+    neck.rotateX(Math.PI/2); neck.translate(0,(ARC_NECK_EMBED-ARC_NECK_LEN)/2,arc.dz);
     const out=[{geo:tab,mat:new THREE.Matrix4()},
+               {geo:neck,mat:new THREE.Matrix4()},
                {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
     // 安裝片跟楔形主體之間加兩根斜撐（仿自製彎樑 B8_8b 那種轉角斜撐的作法），
-    // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷。
+    // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷——現在安裝片伸得更遠，
+    // 斜撐正好順便撐過細頸子那一段。
     const rw=b.rw||R, tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2+ARC_EXT-(rw+3));
     const bz=Math.max(2, arc.dz*0.35);   // 越靠近底部材料越厚，往下撐比較安全
     [-1,1].forEach(sg=>{
       const ex=sg*tabHalf;
-      out.push({geo:strutBetween([ex,-th/2+1,arc.dz],[ex,2,bz],1.3),
+      out.push({geo:strutBetween([ex,shiftY+th/2-1,arc.dz],[ex,2,bz],1.3),
                  mat:new THREE.Matrix4()});
     });
     return out;
