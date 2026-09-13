@@ -219,24 +219,31 @@ DEFS['snapL']=defFrom([
   {xs:from0(3),rot:DEG(90),spins:[{x:0,s: 1},{x:2*MOD,s: 1}]}],TH,
   '直角 3×3 · 四凸銷 · 49130','凸銷樑');
 
-// 弧形板：安裝片（一根普通直樑，孔位/吸附全部沿用 defFrom）＋掛在上面的弧形殼。
-// 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長/寬/厚由使用者輸入，
+// 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
+// 孔位開在背面（一段標準樑孔位，立起來貼齊背面、一半embed進實心楔形裡讓匯出時
+// 真正融成一體，一半露在外面給其他零件接）；底面平放；弧面連接兩者。
+// 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
-function arcPlateDef(radius,len,width,thick){
+function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
-  const d=defFrom([{xs:span(n),rot:0}],TH,
-    '弧形板 · R'+radius+' · '+len+'×'+width+'×'+thick,'弧形板');
-  d.arcParams={radius:radius,len:len,width:width,thick:thick};
-  return d;
+  const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
+  const base=defFrom([{xs:span(n),rot:0}],TH,'','');
+  // 把樑「立起來」當背面孔位：原本攤平 XY（孔軸 Z）→ 攤平 XZ（孔軸 -Y），
+  // 即 rotateX(90°) 的座標映射 (x,y,z)→(x,-z,y)，再沿 Z 平移 dz 到指定高度。
+  const sockets=base.sockets.map(s=>({pos:[s.pos[0],-s.pos[2],s.pos[1]+dz],
+    axis:[s.axis[0],-s.axis[2],s.axis[1]]}));
+  return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
+    name:'弧形板 · R'+radius+' · '+len+' mm',cat:'弧形板',col:CAT_COL['弧形板'],
+    arcParams:{radius:radius,len:len,dz:dz,n:n}};
 }
-DEFS['arcPlate']=arcPlateDef(80,64,32,3.2);   // 目錄示範條目，僅供抽屜列表/縮圖使用
-function buildArcKey(radius,len,width,thick){
-  return 'arc_R'+radius.toFixed(1)+'_L'+len.toFixed(1)+'_W'+width.toFixed(1)+'_T'+thick.toFixed(1);
+DEFS['arcPlate']=arcPlateDef(80,64);   // 目錄示範條目，僅供抽屜列表/縮圖使用
+function buildArcKey(radius,len){
+  return 'arc_R'+radius.toFixed(1)+'_L'+len.toFixed(1);
 }
 function ensureArcDef(key){
   if(DEFS[key])return key;
-  const m=/^arc_R([\d.]+)_L([\d.]+)_W([\d.]+)_T([\d.]+)$/.exec(key);
-  if(m)DEFS[key]=arcPlateDef(parseFloat(m[1]),parseFloat(m[2]),parseFloat(m[3]),parseFloat(m[4]));
+  const m=/^arc_R([\d.]+)_L([\d.]+)$/.exec(key);
+  if(m)DEFS[key]=arcPlateDef(parseFloat(m[1]),parseFloat(m[2]));
   return key;
 }
 
@@ -516,6 +523,17 @@ function partPieces(p,holeD,grow){
   const brace=(p.kind==='brace');
   const th=(brace?TH:(DEFS[p.defKey].th||TH))+(grow||0);
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
+  const arc=!brace&&DEFS[p.defKey].arcParams;
+  if(arc){
+    // 背面孔位薄片：先照普通樑生成（攤平 XY、孔軸 Z），再立起來（rotateX 90°）
+    // 貼到背面、沿 Z 抬到 dz 高度——跟 arcPlateDef() 算 sockets 用的是同一個映射，
+    // 一半 embed 進楔形實心裡（匯出時真正融合），一半露在外面給其他零件接。
+    const b=bars[0];
+    const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
+    tab.rotateX(Math.PI/2); tab.translate(0,0,arc.dz);
+    return [{geo:tab,mat:new THREE.Matrix4()},
+            {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+  }
   const out=[];
   const cuts=sideCutList(bars,th,holeD);
   const main=bars.map(b=>{
@@ -529,39 +547,29 @@ function partPieces(p,holeD,grow){
       out.push({geo:place(pg), mat:new THREE.Matrix4()}));
     return {geo:g, mat:new THREE.Matrix4()};
   });
-  const arc=!brace&&DEFS[p.defKey].arcParams;
-  if(arc)out.push({geo:arcShellGeo(arc.radius,arc.thick,arc.len,arc.width),
-                    mat:new THREE.Matrix4()});
   return main.concat(out);
 }
-// 弧形殼：厚度×寬度的矩形截面，沿一段圓弧（半徑 radius，弧長≈len）掃過去，
-// 寬度方向（Y）維持平直。內表面在弧的中點貼齊安裝片頂面（z=TH/2）。
-// 手法跟 pushWall/pushRing 一樣（一段一段生成四邊形帶），只是把直線擠出換成弧形擠出。
-function arcShellGeo(radius,thick,len,width){
-  const theta=Math.max(0.02,len/radius), half=theta/2;
-  const N=Math.max(8,Math.min(64,Math.ceil(theta/(Math.PI/24))));
-  const r0=radius-thick, r1=radius, zc=TH/2-r0, hw=width/2;
-  const inLo=[],inHi=[],outLo=[],outHi=[];
-  for(let i=0;i<=N;i++){
-    const a=-half+i/N*theta, s=Math.sin(a), c=Math.cos(a);
-    inLo.push(new THREE.Vector3(r0*s,-hw,zc+r0*c));
-    inHi.push(new THREE.Vector3(r0*s, hw,zc+r0*c));
-    outLo.push(new THREE.Vector3(r1*s,-hw,zc+r1*c));
-    outHi.push(new THREE.Vector3(r1*s, hw,zc+r1*c));
-  }
+// 四分之一圓柱實心楔形：局部座標 X=長度方向（沿此排孔）、Y=深度（0=背面...radius=前緣）、
+// Z=高度（0=底面...radius=背面頂端），實心填滿 {Y,Z≥0, Y²+Z²≤radius²} 沿 X 擠出 len。
+// 跟 barSolidSpec 同一套手法（2D 剖面三角化當封蓋、繞外框生成側壁），只是擠出方向換成 X。
+function arcWedgeGeo(radius,len){
+  const N=Math.max(8,Math.min(48,Math.ceil(radius/4)));
+  const half=len/2;
+  const prof=[new THREE.Vector2(0,0)];
+  for(let i=0;i<=N;i++){const t=i/N*Math.PI/2;
+    prof.push(new THREE.Vector2(radius*Math.sin(t), radius*Math.cos(t)));}
+  const faces=THREE.ShapeUtils.triangulateShape(prof,[]);
   const T=[];
-  const quad=(a,b,c,d)=>{ // a,b,c,d 逆時針，法線朝外
-    T.push(a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z);
-    T.push(a.x,a.y,a.z, c.x,c.y,c.z, d.x,d.y,d.z);
-  };
-  for(let i=0;i<N;i++){
-    quad(outLo[i],outHi[i],outHi[i+1],outLo[i+1]);   // 外弧面（法線朝 +X/+radial 外）
-    quad(inHi[i],inLo[i],inLo[i+1],inHi[i+1]);        // 內弧面（反向，法線朝內側）
-    quad(inLo[i],outLo[i],outLo[i+1],inLo[i+1]);      // -Y 側面
-    quad(outHi[i],inHi[i],inHi[i+1],outHi[i+1]);      // +Y 側面
+  faces.forEach(f=>{
+    const A=prof[f[0]],B=prof[f[1]],C=prof[f[2]];
+    T.push(-half,A.x,A.y, -half,C.x,C.y, -half,B.x,B.y);   // X=-half 封蓋
+    T.push( half,A.x,A.y,  half,B.x,B.y,  half,C.x,C.y);   // X=+half 封蓋
+  });
+  for(let i=0;i<prof.length;i++){
+    const p0=prof[i], p1=prof[(i+1)%prof.length];
+    T.push(-half,p0.x,p0.y,  half,p0.x,p0.y,  half,p1.x,p1.y);
+    T.push(-half,p0.x,p0.y,  half,p1.x,p1.y,  -half,p1.x,p1.y);
   }
-  quad(inLo[0],inHi[0],outHi[0],outLo[0]);            // 起始端封蓋
-  quad(outLo[N],outHi[N],inHi[N],inLo[N]);            // 末端封蓋
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.Float32BufferAttribute(T,3));
   g.computeVertexNormals();
@@ -572,4 +580,4 @@ const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':
 
 export {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,
   cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,
-  arcPlateDef,arcShellGeo,buildArcKey,ensureArcDef};
+  arcPlateDef,arcWedgeGeo,buildArcKey,ensureArcDef};

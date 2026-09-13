@@ -833,7 +833,7 @@ function localExtent(p){
     b.xs.forEach(x=>{const px=x*co+ox,py=x*si+oy;
       x0=Math.min(x0,px);x1=Math.max(x1,px);y0=Math.min(y0,py);y1=Math.max(y1,py);});});
   const e=V3((x1-x0)/2+R,(y1-y0)/2+R,(d.th||TH)/2);
-  if(d.arcParams){e.y=Math.max(e.y,d.arcParams.width/2);e.z=Math.max(e.z,d.arcParams.thick+d.arcParams.radius*.3);}
+  if(d.arcParams){e.y=Math.max(e.y,d.arcParams.radius);e.z=Math.max(e.z,d.arcParams.radius);}
   return {c:V3((x0+x1)/2,(y0+y1)/2,0),e:e};
 }
 function setFill(A,a0,ang){
@@ -1137,13 +1137,11 @@ function buildList(){
 // 既有的 ghost 放置流程；取消則什麼都不做。
 async function openArcDialog(defaults){
   const r=await Ask.numbers('弧形板尺寸',[
-    {key:'radius',label:'半徑 R (mm)',def:defaults.radius,min:20,max:500,step:1},
-    {key:'len',label:'長度 (mm)',def:defaults.len,min:8,max:400,step:1},
-    {key:'width',label:'寬度 (mm)',def:defaults.width,min:4,max:300,step:1},
-    {key:'thick',label:'厚度 (mm)',def:defaults.thick,min:1,max:20,step:.1}
+    {key:'radius',label:'半徑 R (mm)',def:defaults.radius,min:15,max:500,step:1},
+    {key:'len',label:'長度 (mm)',def:defaults.len,min:8,max:400,step:1}
   ]);
   if(!r)return;
-  const key=buildArcKey(r.radius,r.len,r.width,r.thick);
+  const key=buildArcKey(r.radius,r.len);
   ensureArcDef(key);
   startGhost(key);
 }
