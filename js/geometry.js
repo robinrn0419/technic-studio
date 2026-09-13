@@ -535,16 +535,29 @@ function partPieces(p,holeD,grow){
   const arc=!brace&&DEFS[p.defKey].arcParams;
   if(arc){
     // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——直接貼背面，
-    // 一部分 embed 進楔形裡（融合用），沒有細頸子、沒有斜撐（那些組裝時會擋到
-    // 其他零件、外觀也奇怪，拿掉）。跟 arcPlateDef() 算 sockets 用的是同一個
-    // yTab 公式。
+    // 一部分 embed 進楔形裡（融合用）。跟 arcPlateDef() 算 sockets 用的是
+    // 同一個 yTab 公式。
     const b=bars[0];
     const rw=b.rw||R;
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
     const yTab=ARC_EMBED-rw;
     tab.translate(0,yTab,arc.dz);
-    return [{geo:tab,mat:new THREE.Matrix4()},
-            {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+    const out=[{geo:tab,mat:new THREE.Matrix4()},
+               {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+    // 兩端各加一塊三角形支架，補強安裝片跟楔形背面之間的接合。整塊都卡在安裝片
+    // 自己的厚度範圍內（Z 落在 dz±rw，跟安裝片一樣高，不會更高也不會更低），
+    // 而且只出現在 ARC_EXT 那段沒有孔的延伸區——每個孔的正上方/正下方永遠淨空，
+    // 接其他零件時插銷可以直接上下穿過，不會被支架擋住。
+    const half=(arc.n-1)*MOD/2, gussetReach=Math.max(1.5,ARC_EXT-1);
+    const zb=arc.dz-rw, zt=arc.dz+rw, yBack=yTab-rw;
+    [-1,1].forEach(sg=>{
+      const xEnd=sg*(half+ARC_EXT), xIn=sg*(half+ARC_EXT-gussetReach);
+      const pts=sg>0
+        ? [new THREE.Vector2(xEnd,yBack), new THREE.Vector2(xEnd,0), new THREE.Vector2(xIn,0)]
+        : [new THREE.Vector2(xEnd,yBack), new THREE.Vector2(xIn,0), new THREE.Vector2(xEnd,0)];
+      out.push({geo:prismGeo(pts,zb,zt), mat:new THREE.Matrix4()});
+    });
+    return out;
   }
   const out=[];
   const cuts=sideCutList(bars,th,holeD);
@@ -560,6 +573,26 @@ function partPieces(p,holeD,grow){
     return {geo:g, mat:new THREE.Matrix4()};
   });
   return main.concat(out);
+}
+// 任意簡單多邊形沿 Z 擠出（跟 barSolidSpec 同一套手法：2D 三角化當封蓋、
+// 繞外框生成側壁），pts 需為逆時針（從 +Z 往下看），z0<z1。
+function prismGeo(pts,z0,z1){
+  const faces=THREE.ShapeUtils.triangulateShape(pts,[]);
+  const T=[];
+  faces.forEach(f=>{
+    const A=pts[f[0]],B=pts[f[1]],C=pts[f[2]];
+    T.push(A.x,A.y,z1, B.x,B.y,z1, C.x,C.y,z1);   // 上蓋
+    T.push(A.x,A.y,z0, C.x,C.y,z0, B.x,B.y,z0);   // 下蓋，反向
+  });
+  for(let i=0;i<pts.length;i++){
+    const p0=pts[i], p1=pts[(i+1)%pts.length];
+    T.push(p0.x,p0.y,z0, p1.x,p1.y,z0, p1.x,p1.y,z1);
+    T.push(p0.x,p0.y,z0, p1.x,p1.y,z1, p0.x,p0.y,z1);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(T,3));
+  g.computeVertexNormals();
+  return g;
 }
 // 實心楔形，凹面朝內（像溜滑梯/quarter-pipe 的騎乘面）：局部座標 X=長度方向（沿此排孔）、
 // Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
