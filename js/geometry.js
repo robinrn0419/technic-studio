@@ -549,15 +549,17 @@ function partPieces(p,holeD,grow){
   });
   return main.concat(out);
 }
-// 四分之一圓柱實心楔形：局部座標 X=長度方向（沿此排孔）、Y=深度（0=背面...radius=前緣）、
-// Z=高度（0=底面...radius=背面頂端），實心填滿 {Y,Z≥0, Y²+Z²≤radius²} 沿 X 擠出 len。
+// 實心楔形，凹面朝內（像溜滑梯/quarter-pipe 的騎乘面）：局部座標 X=長度方向（沿此排孔）、
+// Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
+// （Z=0）都是完整的一整條邊；剖面是「整個正方形挖掉以遠角 (radius,radius) 為圓心的四分之一
+// 圓」——弧面從 (radius,0) 凹向原點、彎到 (0,radius)，原點那個直角本身仍是實心。
 // 跟 barSolidSpec 同一套手法（2D 剖面三角化當封蓋、繞外框生成側壁），只是擠出方向換成 X。
 function arcWedgeGeo(radius,len){
   const N=Math.max(8,Math.min(48,Math.ceil(radius/4)));
   const half=len/2;
   const prof=[new THREE.Vector2(0,0)];
-  for(let i=0;i<=N;i++){const t=i/N*Math.PI/2;
-    prof.push(new THREE.Vector2(radius*Math.sin(t), radius*Math.cos(t)));}
+  for(let i=0;i<=N;i++){const t=Math.PI*1.5-i/N*(Math.PI/2);
+    prof.push(new THREE.Vector2(radius+radius*Math.cos(t), radius+radius*Math.sin(t)));}
   const faces=THREE.ShapeUtils.triangulateShape(prof,[]);
   const T=[];
   faces.forEach(f=>{
