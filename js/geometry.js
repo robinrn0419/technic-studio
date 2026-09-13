@@ -220,28 +220,25 @@ DEFS['snapL']=defFrom([
   '直角 3×3 · 四凸銷 · 49130','凸銷樑');
 
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
-// 底面平放，弧面連接兩者。安裝片不是直接貼在背面，是「先一段細頸子、頸子末端才
-// 放大成有孔的寬樁」的兩段式（仿手繪參考圖：細頸子接進大板子，樁本身明顯凸出來，
-// 不是只埋在裡面露一點點）；安裝片本身維持標準攤平方向（孔軸垂直 Z，
-// 跟其他所有零件一致），不是立起來貼著背面。安裝片兩端各外伸 ARC_EXT（不開孔），
-// 仿自製彎樑 B8_8b 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
+// 底面平放，弧面連接兩者。安裝片是標準攤平方向（孔軸垂直 Z，跟其他所有零件
+// 一致）的一小段樑，直接貼在背面、一部分 embed 進楔形裡融合、其餘露出來，
+// 中間不加細頸子或斜撐——之前那版細頸子＋斜撐組裝時會擋到、外觀也奇怪，
+// 拿掉之後單純很多。安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b 的
+// 橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
-const ARC_EXT=4;             // 安裝片兩端外伸（不開孔）
-const ARC_NECK_LEN=6;        // 細頸子露出背面的長度
-const ARC_NECK_EMBED=2;      // 細頸子埋進楔形裡的長度（融合用）
-const ARC_NECK_RW=2.0;       // 細頸子半寬（比標準樑的 R=3.9 窄，看起來像「先收窄」）
-const ARC_TAB_EMBED=2;       // 安裝片埋進細頸子末端的長度（融合用）
+const ARC_EXT=4;      // 安裝片兩端外伸（不開孔）
+const ARC_EMBED=3;    // 安裝片埋進楔形背面的深度（融合用，其餘露出來給其他零件接）
 function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
   const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
   const half=(n-1)*MOD/2;
   const xs=[-half-ARC_EXT,...span(n),half+ARC_EXT];
   const base=defFrom([{xs:xs,rot:0,noface:[-half-ARC_EXT,half+ARC_EXT]}],TH,'','');
-  // 安裝片維持標準攤平方向（孔軸 Z，垂直——跟其他所有零件一致），不轉 90 度立起來；
-  // 只是整組孔位沿 Y 移到安裝片實際所在位置（細頸子外伸出去那裡）、沿 Z 抬到高度 dz，
+  // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來；只是整組孔位
+  // 沿 Y 移到安裝片實際所在位置（貼背面，一部分 embed 進去）、沿 Z 抬到高度 dz，
   // 跟 partPieces() 生成安裝片網格時用的 yTab 是同一個公式。
-  const yTab=-ARC_NECK_LEN+ARC_TAB_EMBED-R;
+  const yTab=ARC_EMBED-R;
   const sockets=base.sockets.map(s=>({pos:[s.pos[0],s.pos[1]+yTab,s.pos[2]+dz],
     axis:s.axis.slice()}));
   return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
@@ -537,36 +534,17 @@ function partPieces(p,holeD,grow){
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const arc=!brace&&DEFS[p.defKey].arcParams;
   if(arc){
-    // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——只是平移到它
-    // 實際所在位置：細頸子外伸出去那裡（Y 方向）、高度 dz（Z 方向）。
-    // 跟 arcPlateDef() 算 sockets 用的是同一個 yTab 公式。
+    // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——直接貼背面，
+    // 一部分 embed 進楔形裡（融合用），沒有細頸子、沒有斜撐（那些組裝時會擋到
+    // 其他零件、外觀也奇怪，拿掉）。跟 arcPlateDef() 算 sockets 用的是同一個
+    // yTab 公式。
     const b=bars[0];
     const rw=b.rw||R;
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    const yTab=-ARC_NECK_LEN+ARC_TAB_EMBED-rw;
+    const yTab=ARC_EMBED-rw;
     tab.translate(0,yTab,arc.dz);
-    // 細頸子：窄一點（rw 比標準樑小）的實心短樑，一端埋進楔形背面，另一端接安裝片。
-    // 這段本身沒有孔，只是個連接用的實體，所以還是用「立起來」那套（rotateX 90°）
-    // 把它的厚度方向轉成 Y，讓它沿著深度方向伸出去。
-    const neckXs=[-arc.half,arc.half];
-    const neck=barSolid(neckXs,holeD,ARC_NECK_LEN+ARC_NECK_EMBED,null,
-      {xs:neckXs,noface:neckXs,rw:ARC_NECK_RW},null,ARC_NECK_RW);
-    neck.rotateX(Math.PI/2); neck.translate(0,(ARC_NECK_EMBED-ARC_NECK_LEN)/2,arc.dz);
-    const out=[{geo:tab,mat:new THREE.Matrix4()},
-               {geo:neck,mat:new THREE.Matrix4()},
-               {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
-    // 安裝片跟楔形主體之間加兩根斜撐（仿自製彎樑 B8_8b 那種轉角斜撐的作法），
-    // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷——現在安裝片伸得更遠，
-    // 斜撐正好順便撐過細頸子那一段。
-    const tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2+ARC_EXT-(rw+3));
-    const bz=Math.max(2, arc.dz*0.35);   // 越靠近底部材料越厚，往下撐比較安全
-    const tabInnerY=-ARC_NECK_LEN+ARC_TAB_EMBED;   // 安裝片靠楔形那一側的邊緣
-    [-1,1].forEach(sg=>{
-      const ex=sg*tabHalf;
-      out.push({geo:strutBetween([ex,tabInnerY-1,arc.dz],[ex,2,bz],1.3),
-                 mat:new THREE.Matrix4()});
-    });
-    return out;
+    return [{geo:tab,mat:new THREE.Matrix4()},
+            {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
   }
   const out=[];
   const cuts=sideCutList(bars,th,holeD);
@@ -582,18 +560,6 @@ function partPieces(p,holeD,grow){
     return {geo:g, mat:new THREE.Matrix4()};
   });
   return main.concat(out);
-}
-// 兩點之間的斜撐圓桿（仿自製彎樑 B8_8b 的 strut() 手法，只是那邊是攤平 XY 的膠囊樑，
-// 這裡兩個端點可以在任意 3D 方向，所以直接生成一根圓柱再轉到瞄準方向）
-function strutBetween(A,B,rStrut){
-  const dx=B[0]-A[0], dy=B[1]-A[1], dz=B[2]-A[2];
-  const len=Math.max(0.5,Math.hypot(dx,dy,dz));
-  const g=new THREE.CylinderGeometry(rStrut,rStrut,len,10);
-  const dir=new THREE.Vector3(dx,dy,dz).normalize();
-  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
-  g.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q));
-  g.translate((A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2);
-  return g;
 }
 // 實心楔形，凹面朝內（像溜滑梯/quarter-pipe 的騎乘面）：局部座標 X=長度方向（沿此排孔）、
 // Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
