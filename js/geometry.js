@@ -531,8 +531,18 @@ function partPieces(p,holeD,grow){
     const b=bars[0];
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
     tab.rotateX(Math.PI/2); tab.translate(0,0,arc.dz);
-    return [{geo:tab,mat:new THREE.Matrix4()},
-            {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+    const out=[{geo:tab,mat:new THREE.Matrix4()},
+               {geo:arcWedgeGeo(arc.radius,arc.len),mat:new THREE.Matrix4()}];
+    // 安裝片跟楔形主體之間加兩根斜撐（仿自製彎樑 B8_8b 那種轉角斜撐的作法），
+    // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷。
+    const rw=b.rw||R, tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2-(rw+3));
+    const bz=Math.max(2, arc.dz*0.35);   // 越靠近底部材料越厚，往下撐比較安全
+    [-1,1].forEach(sg=>{
+      const ex=sg*tabHalf;
+      out.push({geo:strutBetween([ex,-th/2+1,arc.dz],[ex,2,bz],1.3),
+                 mat:new THREE.Matrix4()});
+    });
+    return out;
   }
   const out=[];
   const cuts=sideCutList(bars,th,holeD);
@@ -549,17 +559,33 @@ function partPieces(p,holeD,grow){
   });
   return main.concat(out);
 }
+// 兩點之間的斜撐圓桿（仿自製彎樑 B8_8b 的 strut() 手法，只是那邊是攤平 XY 的膠囊樑，
+// 這裡兩個端點可以在任意 3D 方向，所以直接生成一根圓柱再轉到瞄準方向）
+function strutBetween(A,B,rStrut){
+  const dx=B[0]-A[0], dy=B[1]-A[1], dz=B[2]-A[2];
+  const len=Math.max(0.5,Math.hypot(dx,dy,dz));
+  const g=new THREE.CylinderGeometry(rStrut,rStrut,len,10);
+  const dir=new THREE.Vector3(dx,dy,dz).normalize();
+  const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+  g.applyQuaternion(q);
+  g.translate((A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2);
+  return g;
+}
 // 實心楔形，凹面朝內（像溜滑梯/quarter-pipe 的騎乘面）：局部座標 X=長度方向（沿此排孔）、
 // Y=深度（0=背面...radius=前緣）、Z=高度（0=底面...radius=背面頂端）。背板（Y=0）跟底面
 // （Z=0）都是完整的一整條邊；剖面是「整個正方形挖掉以遠角 (radius,radius) 為圓心的四分之一
 // 圓」——弧面從 (radius,0) 凹向原點、彎到 (0,radius)，原點那個直角本身仍是實心。
+// 頂端（背板最高處）切掉一小塊平面（cut），不留一條印不出來的刀鋒薄邊。
 // 跟 barSolidSpec 同一套手法（2D 剖面三角化當封蓋、繞外框生成側壁），只是擠出方向換成 X。
 function arcWedgeGeo(radius,len){
+  const cut=Math.min(radius*0.08,5);
+  const tEnd=Math.PI+Math.asin(Math.min(1,cut/radius));
   const N=Math.max(8,Math.min(48,Math.ceil(radius/4)));
   const half=len/2;
   const prof=[new THREE.Vector2(0,0)];
-  for(let i=0;i<=N;i++){const t=Math.PI*1.5-i/N*(Math.PI/2);
+  for(let i=0;i<=N;i++){const t=Math.PI*1.5-i/N*(Math.PI*1.5-tEnd);
     prof.push(new THREE.Vector2(radius+radius*Math.cos(t), radius+radius*Math.sin(t)));}
+  prof.push(new THREE.Vector2(0, radius+radius*Math.sin(tEnd)));   // 頂端小平面
   const faces=THREE.ShapeUtils.triangulateShape(prof,[]);
   const T=[];
   faces.forEach(f=>{
