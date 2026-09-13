@@ -86,7 +86,7 @@ const DEG=d=>d*Math.PI/180;
 
 const CAT_COL={'直樑':0xf2c11c,'薄樑':0x9ba0a6,'直角樑':0xef7c1e,
   'T 樑':0x4d5157,'彎樑':0xc4281c,'框架':0x2f7bbf,'軸孔樑':0x5b8f3e,
-  '凸銷樑':0x8d8f94};
+  '凸銷樑':0x8d8f94,'弧形板':0x2f9e8f};
 const DEFS={};
 // ── 以下皆為正版實際存在的零件，括號為官方零件編號 ──
 // 厚直樑
@@ -219,7 +219,28 @@ DEFS['snapL']=defFrom([
   {xs:from0(3),rot:DEG(90),spins:[{x:0,s: 1},{x:2*MOD,s: 1}]}],TH,
   '直角 3×3 · 四凸銷 · 49130','凸銷樑');
 
-const CATS=['直樑','薄樑','直角樑','T 樑','彎樑','框架','軸孔樑','凸銷樑'];
+// 弧形板：安裝片（一根普通直樑，孔位/吸附全部沿用 defFrom）＋掛在上面的弧形殼。
+// 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長/寬/厚由使用者輸入，
+// 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
+function arcPlateDef(radius,len,width,thick){
+  const n=Math.max(2,Math.round(len/MOD)+1);
+  const d=defFrom([{xs:span(n),rot:0}],TH,
+    '弧形板 · R'+radius+' · '+len+'×'+width+'×'+thick,'弧形板');
+  d.arcParams={radius:radius,len:len,width:width,thick:thick};
+  return d;
+}
+DEFS['arcPlate']=arcPlateDef(80,64,32,3.2);   // 目錄示範條目，僅供抽屜列表/縮圖使用
+function buildArcKey(radius,len,width,thick){
+  return 'arc_R'+radius.toFixed(1)+'_L'+len.toFixed(1)+'_W'+width.toFixed(1)+'_T'+thick.toFixed(1);
+}
+function ensureArcDef(key){
+  if(DEFS[key])return key;
+  const m=/^arc_R([\d.]+)_L([\d.]+)_W([\d.]+)_T([\d.]+)$/.exec(key);
+  if(m)DEFS[key]=arcPlateDef(parseFloat(m[1]),parseFloat(m[2]),parseFloat(m[3]),parseFloat(m[4]));
+  return key;
+}
+
+const CATS=['直樑','薄樑','直角樑','T 樑','彎樑','框架','軸孔樑','凸銷樑','弧形板'];
 const KEYS_BY_CAT={};
 CATS.forEach(c=>KEYS_BY_CAT[c]=Object.keys(DEFS).filter(k=>DEFS[k].cat===c));
 
@@ -508,10 +529,47 @@ function partPieces(p,holeD,grow){
       out.push({geo:place(pg), mat:new THREE.Matrix4()}));
     return {geo:g, mat:new THREE.Matrix4()};
   });
+  const arc=!brace&&DEFS[p.defKey].arcParams;
+  if(arc)out.push({geo:arcShellGeo(arc.radius,arc.thick,arc.len,arc.width),
+                    mat:new THREE.Matrix4()});
   return main.concat(out);
 }
+// 弧形殼：厚度×寬度的矩形截面，沿一段圓弧（半徑 radius，弧長≈len）掃過去，
+// 寬度方向（Y）維持平直。內表面在弧的中點貼齊安裝片頂面（z=TH/2）。
+// 手法跟 pushWall/pushRing 一樣（一段一段生成四邊形帶），只是把直線擠出換成弧形擠出。
+function arcShellGeo(radius,thick,len,width){
+  const theta=Math.max(0.02,len/radius), half=theta/2;
+  const N=Math.max(8,Math.min(64,Math.ceil(theta/(Math.PI/24))));
+  const r0=radius-thick, r1=radius, zc=TH/2-r0, hw=width/2;
+  const inLo=[],inHi=[],outLo=[],outHi=[];
+  for(let i=0;i<=N;i++){
+    const a=-half+i/N*theta, s=Math.sin(a), c=Math.cos(a);
+    inLo.push(new THREE.Vector3(r0*s,-hw,zc+r0*c));
+    inHi.push(new THREE.Vector3(r0*s, hw,zc+r0*c));
+    outLo.push(new THREE.Vector3(r1*s,-hw,zc+r1*c));
+    outHi.push(new THREE.Vector3(r1*s, hw,zc+r1*c));
+  }
+  const T=[];
+  const quad=(a,b,c,d)=>{ // a,b,c,d 逆時針，法線朝外
+    T.push(a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z);
+    T.push(a.x,a.y,a.z, c.x,c.y,c.z, d.x,d.y,d.z);
+  };
+  for(let i=0;i<N;i++){
+    quad(outLo[i],outHi[i],outHi[i+1],outLo[i+1]);   // 外弧面（法線朝 +X/+radial 外）
+    quad(inHi[i],inLo[i],inLo[i+1],inHi[i+1]);        // 內弧面（反向，法線朝內側）
+    quad(inLo[i],outLo[i],outLo[i+1],inLo[i+1]);      // -Y 側面
+    quad(outHi[i],inHi[i],inHi[i+1],outHi[i+1]);      // +Y 側面
+  }
+  quad(inLo[0],inHi[0],outHi[0],outLo[0]);            // 起始端封蓋
+  quad(outLo[N],outHi[N],inHi[N],inLo[N]);            // 末端封蓋
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(T,3));
+  g.computeVertexNormals();
+  return g;
+}
 
-const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':'彎','框架':'框','軸孔樑':'軸','凸銷樑':'銷'};
+const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':'彎','框架':'框','軸孔樑':'軸','凸銷樑':'銷','弧形板':'弧'};
 
 export {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,
-  cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces};
+  cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,
+  arcPlateDef,arcShellGeo,buildArcKey,ensureArcDef};

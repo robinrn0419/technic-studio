@@ -284,6 +284,14 @@ body.show-intro #empty{display:flex!important}
   border:0;border-bottom:1px solid var(--hair-2);padding:9px 2px;
   font:15px var(--sans);outline:none;transition:border-color .24s var(--ease)}
 #askInput:focus{border-color:var(--acc)}
+#askNums{display:flex;flex-direction:column;gap:14px}
+.numRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.numRow label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dim)}
+.numRow input{width:96px;box-sizing:border-box;background:var(--bg);color:var(--text);
+  border:0;border-bottom:1px solid var(--hair-2);padding:9px 2px;text-align:right;
+  font:15px var(--sans);outline:none;transition:border-color .24s var(--ease)}
+.numRow input:focus{border-color:var(--acc)}
 #askRow{display:flex;gap:4px;justify-content:flex-end;margin-top:30px}
 #askRow button{padding:8px 14px}
 /* ── 主頁 ── */
@@ -780,6 +788,7 @@ button:active:not(:disabled){transform:translateY(.5px) scale(.975)}
   <p id="askBody"></p>
   <label id="askLab" for="askInput"></label>
   <input id="askInput" type="text" autocomplete="off">
+  <div id="askNums" style="display:none"></div>
   <div id="askRow">
     <button class="quiet" id="askNo">取消</button>
     <button class="ink" id="askYes">確定</button>

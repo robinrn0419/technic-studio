@@ -2,7 +2,7 @@ import {toast} from './toast.js';
 import {Ask} from './dialogs.js';
 import {syncHowto} from './howto.js';
 import './feedback.js';
-import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,SHORT,cbDia,cbDep,thumb,barSolidSpec,partPieces,setSkipCuts} from './geometry.js';
+import {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,SHORT,cbDia,cbDep,thumb,barSolidSpec,partPieces,setSkipCuts,buildArcKey,ensureArcDef} from './geometry.js';
 import {dl,trisOf,writeSTL,auditTris,loadManifold,getMF,unionTris} from './stl-export.js';
 
 (function(){
@@ -233,6 +233,7 @@ function restore(json){
       const p={id:d.id,kind:d.kind,defKey:d.defKey,obj:new THREE.Group(),link:null,
                span:d.span,aRef:d.aRef,bRef:d.bRef,layer:d.layer||0,
                hmode:d.hmode||null};
+      if(p.kind!=='brace')ensureArcDef(p.defKey);
       p.obj.userData.pid=p.id;buildMeshes(p);world.add(p.obj);
       if(d.pos)p.obj.position.fromArray(d.pos);
       if(d.rot)p.obj.rotation.set(d.rot[0],d.rot[1],d.rot[2]);
@@ -831,8 +832,9 @@ function localExtent(p){
     const ox=(b.off&&b.off[0])||0,oy=(b.off&&b.off[1])||0;
     b.xs.forEach(x=>{const px=x*co+ox,py=x*si+oy;
       x0=Math.min(x0,px);x1=Math.max(x1,px);y0=Math.min(y0,py);y1=Math.max(y1,py);});});
-  return {c:V3((x0+x1)/2,(y0+y1)/2,0),
-          e:V3((x1-x0)/2+R,(y1-y0)/2+R,(d.th||TH)/2)};
+  const e=V3((x1-x0)/2+R,(y1-y0)/2+R,(d.th||TH)/2);
+  if(d.arcParams){e.y=Math.max(e.y,d.arcParams.width/2);e.z=Math.max(e.z,d.arcParams.thick+d.arcParams.radius*.3);}
+  return {c:V3((x0+x1)/2,(y0+y1)/2,0),e:e};
 }
 function setFill(A,a0,ang){
   const st=(ang<0)?(a0+ang):a0, ln=Math.abs(ang);
@@ -1124,8 +1126,26 @@ function buildList(){
     const b=document.createElement('button');b.className='prow';
     b.title=DEFS[k].name;
     b.innerHTML='<span class="lbl">'+DEFS[k].name+'</span>'+thumb(k);
-    b.onclick=()=>startGhost(k);
+    b.onclick=()=>{
+      const ap=DEFS[k].arcParams;
+      if(ap){openArcDialog(ap);return;}
+      startGhost(k);
+    };
     c.appendChild(b);});
+}
+// 弧形板：跳出半徑/長/寬/厚的數字輸入框，確定後動態組出這次的專屬 defKey 再走
+// 既有的 ghost 放置流程；取消則什麼都不做。
+async function openArcDialog(defaults){
+  const r=await Ask.numbers('弧形板尺寸',[
+    {key:'radius',label:'半徑 R (mm)',def:defaults.radius,min:20,max:500,step:1},
+    {key:'len',label:'長度 (mm)',def:defaults.len,min:8,max:400,step:1},
+    {key:'width',label:'寬度 (mm)',def:defaults.width,min:4,max:300,step:1},
+    {key:'thick',label:'厚度 (mm)',def:defaults.thick,min:1,max:20,step:.1}
+  ]);
+  if(!r)return;
+  const key=buildArcKey(r.radius,r.len,r.width,r.thick);
+  ensureArcDef(key);
+  startGhost(key);
 }
 // 自動開合
 const dock=el('dock');let dockT=null;
