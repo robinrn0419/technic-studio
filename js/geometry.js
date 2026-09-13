@@ -221,14 +221,18 @@ DEFS['snapL']=defFrom([
 
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
 // 底面平放，弧面連接兩者。安裝片是標準攤平方向（孔軸垂直 Z，跟其他所有零件
-// 一致）的一小段樑，直接貼在背面、一部分 embed 進楔形裡融合、其餘露出來，
-// 中間不加細頸子或斜撐——之前那版細頸子＋斜撐組裝時會擋到、外觀也奇怪，
-// 拿掉之後單純很多。安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b 的
-// 橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
+// 一致）的一小段樑，明顯離開背面 ARC_GAP 這麼遠（不是貼著/埋在楔形裡），
+// 兩端各用一塊三角支架撐住——支架整塊卡在安裝片自己的厚度範圍內（Z 落在
+// dz±R，不會比安裝片更高或更低），所以沿著安裝片全長，正上方、正下方永遠
+// 淨空，其他零件的插銷可以直接貫穿，不會被撐架擋住。支架根部（貼楔形那端）
+// 寬度吃滿 ARC_EXT 那段沒有孔的延伸區，盡量加粗承受衝擊力（這是打架用的
+// 零件，斷了就沒用了）。安裝片兩端外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b
+// 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去，
+// 剛好也是支架落地生根的地方。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
-const ARC_EXT=4;      // 安裝片兩端外伸（不開孔）
-const ARC_EMBED=3;    // 安裝片埋進楔形背面的深度（融合用，其餘露出來給其他零件接）
+const ARC_EXT=6;      // 安裝片兩端外伸（不開孔），也是支架根部的寬度
+const ARC_GAP=10;     // 安裝片離開背面多遠（明顯拉出來，不是貼著/埋進去）
 function arcPlateDef(radius,len){
   const n=Math.max(2,Math.round(len/MOD)+1);
   const dz=Math.max(6,Math.min(radius*0.4,radius-8));   // 孔位在背面上的高度
@@ -236,9 +240,9 @@ function arcPlateDef(radius,len){
   const xs=[-half-ARC_EXT,...span(n),half+ARC_EXT];
   const base=defFrom([{xs:xs,rot:0,noface:[-half-ARC_EXT,half+ARC_EXT]}],TH,'','');
   // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來；只是整組孔位
-  // 沿 Y 移到安裝片實際所在位置（貼背面，一部分 embed 進去）、沿 Z 抬到高度 dz，
+  // 沿 Y 移到安裝片實際所在位置（拉出來 ARC_GAP 那麼遠）、沿 Z 抬到高度 dz，
   // 跟 partPieces() 生成安裝片網格時用的 yTab 是同一個公式。
-  const yTab=ARC_EMBED-R;
+  const yTab=-ARC_GAP-R;
   const sockets=base.sockets.map(s=>({pos:[s.pos[0],s.pos[1]+yTab,s.pos[2]+dz],
     axis:s.axis.slice()}));
   return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
@@ -534,29 +538,30 @@ function partPieces(p,holeD,grow){
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const arc=!brace&&DEFS[p.defKey].arcParams;
   if(arc){
-    // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——直接貼背面，
-    // 一部分 embed 進楔形裡（融合用）。跟 arcPlateDef() 算 sockets 用的是
-    // 同一個 yTab 公式。
+    // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——明顯拉出來離開
+    // 背面 ARC_GAP 那麼遠（不貼、不埋），只靠兩端的支架撐著。跟 arcPlateDef()
+    // 算 sockets 用的是同一個 yTab 公式。
     const b=bars[0];
     const rw=b.rw||R;
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    const yTab=ARC_EMBED-rw;
+    const yTab=-ARC_GAP-rw;
     tab.translate(0,yTab,arc.dz);
-    // 楔形本體的寬度也要涵蓋安裝片兩端外伸的 ARC_EXT，不然安裝片的延伸段跟支架
-    // 會伸到楔形側面以外的空氣裡（沒有實體可以融合/撐著）。
+    // 楔形本體的寬度也要涵蓋安裝片兩端外伸的 ARC_EXT，不然支架的根部會伸到
+    // 楔形側面以外的空氣裡（沒有實體可以融合/撐著）。
     const out=[{geo:tab,mat:new THREE.Matrix4()},
                {geo:arcWedgeGeo(arc.radius,arc.len+2*ARC_EXT),mat:new THREE.Matrix4()}];
-    // 兩端各加一塊三角形支架，補強安裝片跟楔形背面之間的接合。整塊都卡在安裝片
-    // 自己的厚度範圍內（Z 落在 dz±rw，跟安裝片一樣高，不會更高也不會更低），
-    // 而且只出現在 ARC_EXT 那段沒有孔的延伸區——每個孔的正上方/正下方永遠淨空，
-    // 接其他零件時插銷可以直接上下穿過，不會被支架擋住。
-    const half=(arc.n-1)*MOD/2, gussetReach=Math.max(1.5,ARC_EXT-1);
-    const zb=arc.dz-rw, zt=arc.dz+rw, yBack=yTab-rw;
+    // 兩端各加一塊三角形支架，把拉出來的安裝片撐回背面。整塊都卡在安裝片自己的
+    // 厚度範圍內（Z 落在 dz±rw，不會比安裝片更高或更低）——沿著安裝片全長，
+    // 正上方、正下方永遠淨空，其他零件的插銷可以直接貫穿，不會被撐架擋住。
+    // 根部（貼楔形那端）吃滿 ARC_EXT 整段沒有孔的延伸區，盡量加粗，這是打架用的
+    // 零件，撐架斷了就沒用了。
+    const half=(arc.n-1)*MOD/2, gussetReach=ARC_EXT;
+    const zb=arc.dz-rw, zt=arc.dz+rw, yFar=yTab-rw;
     [-1,1].forEach(sg=>{
       const xEnd=sg*(half+ARC_EXT), xIn=sg*(half+ARC_EXT-gussetReach);
       const pts=sg>0
-        ? [new THREE.Vector2(xEnd,yBack), new THREE.Vector2(xEnd,0), new THREE.Vector2(xIn,0)]
-        : [new THREE.Vector2(xEnd,yBack), new THREE.Vector2(xIn,0), new THREE.Vector2(xEnd,0)];
+        ? [new THREE.Vector2(xEnd,yFar), new THREE.Vector2(xEnd,0), new THREE.Vector2(xIn,0)]
+        : [new THREE.Vector2(xEnd,yFar), new THREE.Vector2(xIn,0), new THREE.Vector2(xEnd,0)];
       out.push({geo:prismGeo(pts,zb,zt), mat:new THREE.Matrix4()});
     });
     return out;
