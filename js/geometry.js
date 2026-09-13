@@ -222,8 +222,9 @@ DEFS['snapL']=defFrom([
 // 弧形板：四分之一圓柱的實心楔形（像滑板 quarter-pipe）——背面是直立的平面，
 // 底面平放，弧面連接兩者。安裝片不是直接貼在背面，是「先一段細頸子、頸子末端才
 // 放大成有孔的寬樁」的兩段式（仿手繪參考圖：細頸子接進大板子，樁本身明顯凸出來，
-// 不是只埋在裡面露一點點）。安裝片兩端各外伸 ARC_EXT（不開孔），仿自製彎樑 B8_8b
-// 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
+// 不是只埋在裡面露一點點）；安裝片本身維持標準攤平方向（孔軸垂直 Z，
+// 跟其他所有零件一致），不是立起來貼著背面。安裝片兩端各外伸 ARC_EXT（不開孔），
+// 仿自製彎樑 B8_8b 的橫樑做法——兩端不是齊著最後一個孔收尾，而是多一小段實心延伸出去。
 // 尺寸是連續可調的，不能像其他零件一樣在載入時窮舉——半徑/長度由使用者輸入，
 // 動態組出 defKey、動態註冊 DEFS 條目，之後就是一個貨真價實的普通零件。
 const ARC_EXT=4;             // 安裝片兩端外伸（不開孔）
@@ -237,13 +238,12 @@ function arcPlateDef(radius,len){
   const half=(n-1)*MOD/2;
   const xs=[-half-ARC_EXT,...span(n),half+ARC_EXT];
   const base=defFrom([{xs:xs,rot:0,noface:[-half-ARC_EXT,half+ARC_EXT]}],TH,'','');
-  // 把樑「立起來」當背面孔位：原本攤平 XY（孔軸 Z）→ 攤平 XZ（孔軸 -Y），
-  // 即 rotateX(90°) 的座標映射 (x,y,z)→(x,-z,y)；安裝片現在離開背面一段距離
-  // （細頸子接著），孔位的 Y 要跟著移出去，移動量跟 partPieces() 生成安裝片
-  // 網格時用的 shiftY 是同一個公式。
-  const shiftY=-ARC_NECK_LEN+ARC_TAB_EMBED-TH/2;
-  const sockets=base.sockets.map(s=>({pos:[s.pos[0],-s.pos[2]+shiftY,s.pos[1]+dz],
-    axis:[s.axis[0],-s.axis[2],s.axis[1]]}));
+  // 安裝片維持標準攤平方向（孔軸 Z，垂直——跟其他所有零件一致），不轉 90 度立起來；
+  // 只是整組孔位沿 Y 移到安裝片實際所在位置（細頸子外伸出去那裡）、沿 Z 抬到高度 dz，
+  // 跟 partPieces() 生成安裝片網格時用的 yTab 是同一個公式。
+  const yTab=-ARC_NECK_LEN+ARC_TAB_EMBED-R;
+  const sockets=base.sockets.map(s=>({pos:[s.pos[0],s.pos[1]+yTab,s.pos[2]+dz],
+    axis:s.axis.slice()}));
   return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
     name:'弧形板 · R'+radius+' · '+len+' mm',cat:'弧形板',col:CAT_COL['弧形板'],
     arcParams:{radius:radius,len:len,dz:dz,n:n,half:half}};
@@ -537,15 +537,17 @@ function partPieces(p,holeD,grow){
   const bars=brace?[{xs:[-p.span/2,p.span/2],rot:0}]:DEFS[p.defKey].bars;
   const arc=!brace&&DEFS[p.defKey].arcParams;
   if(arc){
-    // 背面孔位薄片：先照普通樑生成（攤平 XY、孔軸 Z），再立起來（rotateX 90°）——
-    // 跟 arcPlateDef() 算 sockets 用的是同一個座標映射。安裝片不是直接貼背面，
-    // 是「細頸子先接出去、安裝片在頸子末端才放大」的兩段式，所以安裝片還要再多
-    // 沿 Y 位移 shiftY（露出來一大段，只埋進頸子末端一點點）。
+    // 安裝片維持標準攤平方向（孔軸 Z，垂直），不轉 90 度立起來——只是平移到它
+    // 實際所在位置：細頸子外伸出去那裡（Y 方向）、高度 dz（Z 方向）。
+    // 跟 arcPlateDef() 算 sockets 用的是同一個 yTab 公式。
     const b=bars[0];
+    const rw=b.rw||R;
     const tab=barSolid(b.xs,holeD,th,b.ax,b,p.hmode,b.rw);
-    const shiftY=-ARC_NECK_LEN+ARC_TAB_EMBED-th/2;
-    tab.rotateX(Math.PI/2); tab.translate(0,shiftY,arc.dz);
+    const yTab=-ARC_NECK_LEN+ARC_TAB_EMBED-rw;
+    tab.translate(0,yTab,arc.dz);
     // 細頸子：窄一點（rw 比標準樑小）的實心短樑，一端埋進楔形背面，另一端接安裝片。
+    // 這段本身沒有孔，只是個連接用的實體，所以還是用「立起來」那套（rotateX 90°）
+    // 把它的厚度方向轉成 Y，讓它沿著深度方向伸出去。
     const neckXs=[-arc.half,arc.half];
     const neck=barSolid(neckXs,holeD,ARC_NECK_LEN+ARC_NECK_EMBED,null,
       {xs:neckXs,noface:neckXs,rw:ARC_NECK_RW},null,ARC_NECK_RW);
@@ -556,11 +558,12 @@ function partPieces(p,holeD,grow){
     // 安裝片跟楔形主體之間加兩根斜撐（仿自製彎樑 B8_8b 那種轉角斜撐的作法），
     // 避免安裝片只靠一小段融合面懸空、受力容易被扳斷——現在安裝片伸得更遠，
     // 斜撐正好順便撐過細頸子那一段。
-    const rw=b.rw||R, tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2+ARC_EXT-(rw+3));
+    const tabHalf=Math.max(rw+2,((arc.n-1)*MOD)/2+ARC_EXT-(rw+3));
     const bz=Math.max(2, arc.dz*0.35);   // 越靠近底部材料越厚，往下撐比較安全
+    const tabInnerY=-ARC_NECK_LEN+ARC_TAB_EMBED;   // 安裝片靠楔形那一側的邊緣
     [-1,1].forEach(sg=>{
       const ex=sg*tabHalf;
-      out.push({geo:strutBetween([ex,shiftY+th/2-1,arc.dz],[ex,2,bz],1.3),
+      out.push({geo:strutBetween([ex,tabInnerY-1,arc.dz],[ex,2,bz],1.3),
                  mat:new THREE.Matrix4()});
     });
     return out;
