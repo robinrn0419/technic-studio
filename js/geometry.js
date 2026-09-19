@@ -1,6 +1,10 @@
 // 零件幾何：孔位/樑輪廓/側孔布林切割等純幾何計算，加上零件目錄資料（DEFS/CATS/...）。
 // 這裡刻意保留 cbDia()/cbDep() 直接讀 DOM（#cbd/#cbh）——它們是全站唯一、穩定的公差輸入框，
 // 不值得為了讓這個模組"看起來更純"而把值一路穿參數傳過來，那樣改動面更大、風險更高。
+// sideCut() 需要的三角形/manifold 轉換工具實際定義在 stl-export.js（跟 unionTris 共用同一套）；
+// 那邊也會 import setMF ← geometry.js，形成雙向 import，但雙方都只在函式內部才用到
+// 對方匯出的東西（不是在模組頂層），ES module 允許這種延遲用到的循環匯入。
+import {trisOf,toSolid,solidToTris} from './stl-export.js';
 const el=id=>document.getElementById(id);
 
 // sideCut()/partPieces() 需要的可變狀態，透過 setter 從 main.js 同步——

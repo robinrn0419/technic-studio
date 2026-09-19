@@ -72,13 +72,13 @@ function indexTris(tris){
     idx.push(i);}));
   return {vertProperties:new Float32Array(verts),triVerts:new Uint32Array(idx)};
 }
-function toSolid(w,tris){
+export function toSolid(w,tris){
   const d=indexTris(tris);
   const mesh=new w.Mesh({numProp:3,vertProperties:d.vertProperties,triVerts:d.triVerts});
   mesh.merge();
   return new w.Manifold(mesh);
 }
-function solidToTris(m){
+export function solidToTris(m){
   const mesh=m.getMesh(),vp=mesh.vertProperties,tv=mesh.triVerts,np=mesh.numProp||3,out=[];
   for(let i=0;i<tv.length;i+=3){
     const t=[];
