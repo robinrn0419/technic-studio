@@ -119,7 +119,7 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
 // 改成掛在 armC 單臂上（兩根細撐都改接回 armC，同一支臂上兩個不同位置）。
 // 每隻臂都裝一顆超音波感測器（側孔固定），故整件共可裝 3 顆。
 (function(){
-  const N=10, BL=2*MOD, EXT=4, W=0.9;
+  const N=11, BL=2*MOD, EXT=4, W=0.9;
   // armC 與 armL／armR 的夾角。改這一個數字即可，下面 SD_C 會跟著算。
   const BEND8=157.5;
   const th=DEG(BEND8);
@@ -135,21 +135,22 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
     return last[1];
   })(BEND8);
   const SD_C=SD;                                  // 4.3
-  // armL／armR 互隔 45°：兩臂上距轉角同樣距離 x 的兩個孔，直線距離＝
-  // 2·x·sin(22.5°)≈0.7654x。要讓兩邊都是標準沉孔（Ø6.1）還留有材料，
-  // 中心距至少要 ≈7mm，算出 x≥9.15mm；不能沿用 armC 那組非格點的 4.3，
-  // 得挪到下一個格點 16mm（距離變成 12.25mm，安全）。臂也因此從 8 孔
-  // 加長到 10 孔，才裝得下 16mm 起跳、間距仍是 48mm（6 格）的感測器孔位，
-  // 不會被推出臂尾。
-  const SIDE2=2*MOD;                              // 16
+  // armL／armR 互隔 45°：兩臂上距轉角同樣距離 x 的兩個「正面孔」，直線距離＝
+  // 2·x·sin(22.5°)≈0.7654x，x=8 只剩 6.1mm，比照原表的安全門檻（沉孔
+  // Ø6.1＋留料）不夠，要移除。但側孔本身更嚴苛：側孔開口偏離臂中心線 ±R，
+  // 兩臂互為鏡像的那組開口實際距離是 2·|x·sin157.5°+R·cos157.5°|，遠比正面
+  // 孔的中心距小——算下來 x=16 只有 5.0mm，得再往外推到 x=24（格點）才有
+  // 11.2mm，安全。臂長也從 8 孔一路加到 11 孔，才裝得下 24mm 起跳、間距仍是
+  // 48mm（6 格）的感測器孔位，尾端還留 8mm 餘量。
+  const SIDE2=3*MOD;                              // 24
   const sideC=[SD_C, SD_C+6*MOD];                 // 4.3、52.3
-  const side2=[SIDE2, SIDE2+6*MOD];               // 16、64
+  const side2=[SIDE2, SIDE2+6*MOD];               // 24、72
   const g=n=>n*MOD;                               // 格點捷徑
-  const armXsC=[...new Set([0,SD_C,g(2),g(3),g(4),g(5),SD_C+6*MOD,g(7),g(8),g(9)])]
+  const armXsC=[...new Set([0,SD_C,g(2),g(3),g(4),g(5),SD_C+6*MOD,g(7),g(8),g(9),g(10)])]
                  .sort((a,b)=>a-b);
   // 填實：轉角、太靠近 SD_C 的 x=8、太靠近 52.3 的 x=48/56、以及兩個側孔本身
   const armSolidC=[0,g(1),g(6),g(7)].concat(sideC);
-  const armXs2=[0,g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),g(9)];
+  const armXs2=[0,g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),g(9),g(10)];
   // 填實：轉角、跟鏡像臂互撞的 x=8（見上方推導）、兩個側孔本身
   const armSolid2=[0,g(1)].concat(side2);
   const strut=(P,Q)=>{const L=Math.hypot(Q[0]-P[0],Q[1]-P[1]);
@@ -167,7 +168,7 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
      noface:[Xc-EXT,Xc+BL+EXT]},                             // 橫樑：3 孔＋兩端外伸段
     strut([Xc-EXT,Dg],[Xc-EXT,R]),
     strut([Xc+BL+EXT,Dg],[Xc+BL+EXT,R])
-  ],TH,'8×10 三臂彎樑 '+BEND8+'°/'+BEND8+'° · 超音波×3 · 自製','彎樑');
+  ],TH,'8×11 三臂彎樑 '+BEND8+'°/'+BEND8+'° · 超音波×3 · 自製','彎樑');
 })();
 L90T.forEach(q=>DEFS['Lt'+q[0]+'_'+q[1]]=defFrom(
   [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH/2,
