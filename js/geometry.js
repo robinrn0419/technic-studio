@@ -170,31 +170,41 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
 // 三段鏈式彎樑（跟上面兩顆超音波那支是兩個不同的零件，都保留）：不是三臂共用
 // 一個轉角點放射狀張開，是像原本兩段彎樑那樣，一路 seg1─轉角1─seg2─轉角2─seg3
 // 接下去，兩個轉角個別獨立、不共用同一個點，整體看起來像一道很淺的弧線
-// （如手繪參考圖）。整支的總彎曲量要跟兩顆超音波那支一致（偏離筆直共 22.5°）
-// ——那支只有一個轉角就吃滿 22.5°，這支有兩個轉角，各分一半（11.25°），
-// 兩個轉角合起來看起來才會跟兩顆超音波那支一樣「彎一點點」，不會兩倍彎。
-// 每段孔位排列統一：格點 0 是轉角本身（填實，不算孔），格點 8／56 是側孔
-// （感測器固定用），格點 16/24/32/40/48 這 5 個是一般正面孔——對應「1、7 是
-// 側孔，中間 5 個孔」。中間段（seg2）因為兩端都是轉角，比外側兩段多一格
-// （0…64，兩端都填實），原本吊掛的 3 孔支架＋兩根細撐照樣掛在中間段。
+// （如手繪參考圖）。夾角跟原設計一樣是 157.5°（每個轉角獨立，不是分攤）。
+// 每一段的孔位排列直接照抄兩顆超音波那支的單臂設計（armXs/armSolid/SD）：
+// 側孔緊貼轉角（SD=4.3，不是格點 8）——這樣感測器才會跟兩顆超音波那支一樣
+// 貼近轉角，不是隔了一整格才開始。也因此每段只有 4 個一般正面孔（16/24/32/40），
+// 不是 5 個：跟兩顆超音波那支同一個原因——第 48 格太靠近另一顆側孔（52.3）
+// 得填實。seg2（中間）直接用跟 seg1/seg3 完全一樣的單臂結構，它自己的臂尾
+// （x=56，本來就因為太靠近側孔而填實）剛好就是 seg3 接上去的轉角點，
+// 三段等於是同一種臂形狀接三次，不需要另外設計中間段。
 (function(){
   const N=8, BL=2*MOD, EXT=4, W=0.9;
-  const BEND8=180-(180-157.5)/2;        // 168.75°：偏離筆直只有 11.25°，兩個
-                                         // 轉角加起來跟原設計的 22.5° 一樣多
+  const BEND8=157.5;                    // 每個轉角的夾角，跟原設計一致
   const th1=DEG(BEND8), th2=DEG(180-BEND8);
-  const L2=N*MOD;                        // 中間段兩端都是轉角，多留一格：64
+  const SD_TABLE=[[90,7.85], [92.5,7.65], [95,7.5], [97.5,7.3], [100,7.1], [102.5,6.95], [105,6.8], [107.5,6.6], [110,6.5], [112.5,6.3], [115,6.2], [117.5,6.05], [120,5.9], [122.5,5.8], [125,5.7], [127.5,5.55], [130,5.4], [132.5,5.3], [135,5.2], [137.5,5.1], [140,5], [142.5,4.9], [145,4.8], [147.5,4.7], [150,4.6], [152.5,4.5], [155,4.4], [157.5,4.3], [160,4.2]];
+  const SD=(function(a){
+    if(a<=SD_TABLE[0][0])return SD_TABLE[0][1];
+    const last=SD_TABLE[SD_TABLE.length-1];
+    if(a>=last[0])return last[1];
+    for(let i=1;i<SD_TABLE.length;i++)
+      if(a<=SD_TABLE[i][0])return SD_TABLE[i-1][1];
+    return last[1];
+  })(BEND8);                            // 4.3，跟兩顆超音波那支完全同一張表
+  const L2=(N-1)*MOD;                   // 56：跟 seg1/seg3 同一個臂長，臂尾即轉角2
   const j1=[0,0], j2=[L2,0];
-  const sideIdx=[MOD,7*MOD];            // 格點 8、56：側孔（感測器）
-  const solid1=[0,MOD,7*MOD];           // 外側兩段：轉角＋兩個側孔
-  const solid2=[0,MOD,7*MOD,L2];        // 中間段：兩個轉角＋兩個側孔
+  const sideIdx=[SD, SD+6*MOD];         // 側孔緊貼轉角：4.3、52.3
+  const armXs=[...new Set([0,SD,2*MOD,3*MOD,4*MOD,5*MOD,6*MOD,SD+6*MOD,(N-1)*MOD])]
+                .sort((a,b)=>a-b);
+  const armSolid=[0,6*MOD,(N-1)*MOD].concat(sideIdx);   // 填實：轉角、x=48、臂端
   const strut=(P,Q)=>{const L=Math.hypot(Q[0]-P[0],Q[1]-P[1]);
     return {xs:[0,L],rot:Math.atan2(Q[1]-P[1],Q[0]-P[0]),off:[P[0],P[1]],
             rw:W,noface:[0,L]};};
   const Xc=24, Dg=17;                   // 支架掛在中間段，離軸 17mm（跟原設計相近）
   DEFS['B8_8chain']=defFrom([
-    {xs:from0(N),rot:th1,off:j1,side:sideIdx,noface:solid1},        // seg1
-    {xs:from0(N+1),rot:0, off:j1,side:sideIdx,noface:solid2},       // seg2（中間，掛支架）
-    {xs:from0(N),rot:th2,off:j2,side:sideIdx,noface:solid1},        // seg3
+    {xs:armXs,rot:th1,off:j1,side:sideIdx,noface:armSolid},        // seg1
+    {xs:armXs,rot:0,  off:j1,side:sideIdx,noface:armSolid},        // seg2（中間，掛支架，臂尾即轉角2）
+    {xs:armXs,rot:th2,off:j2,side:sideIdx,noface:armSolid},        // seg3
     {xs:[Xc-EXT,Xc,Xc+MOD,Xc+BL,Xc+BL+EXT],rot:0,off:[0,Dg],
      noface:[Xc-EXT,Xc+BL+EXT]},                                    // 橫樑：3 孔＋兩端外伸段
     strut([Xc-EXT,Dg],[Xc-EXT,R]),
