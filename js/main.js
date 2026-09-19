@@ -1136,7 +1136,7 @@ function buildList(){
 // 弧形板：跳出半徑/長/寬/厚的數字輸入框，確定後動態組出這次的專屬 defKey 再走
 // 既有的 ghost 放置流程；取消則什麼都不做。
 async function openArcDialog(defaults){
-  const r=await Ask.numbers('弧形板尺寸',[
+  const r=await Ask.numbers('相撲比賽斜板尺寸',[
     {key:'radius',label:'半徑 R (mm)',def:defaults.radius,min:15,max:500,step:1},
     {key:'len',label:'長度 (mm)',def:defaults.len,min:8,max:400,step:1}
   ]);

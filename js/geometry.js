@@ -90,7 +90,7 @@ const DEG=d=>d*Math.PI/180;
 
 const CAT_COL={'直樑':0xf2c11c,'薄樑':0x9ba0a6,'直角樑':0xef7c1e,
   'T 樑':0x4d5157,'彎樑':0xc4281c,'框架':0x2f7bbf,'軸孔樑':0x5b8f3e,
-  '凸銷樑':0x8d8f94,'弧形板':0x2f9e8f};
+  '凸銷樑':0x8d8f94,'自製':0x8e44ad};
 const DEFS={};
 // ── 以下皆為正版實際存在的零件，括號為官方零件編號 ──
 // 厚直樑
@@ -165,22 +165,22 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
      noface:[-EXT,BL+EXT]},                        // 橫樑：3 孔＋兩端外伸段
     strut(tipA,[J,0]),
     strut(tipB,[J*Math.cos(th),J*Math.sin(th)])
-  ],TH,'8×8 彎樑 '+BEND8+'° · 轉角橫樑 · 自製','彎樑');
+  ],TH,'spike兩顆超音波支架','自製');
 })();
-// 三段鏈式彎樑（跟上面那個三臂版是兩個不同的零件，都保留）：不是三臂共用一個
-// 轉角點放射狀張開，是像原本兩段彎樑那樣，一路 seg1─轉角1─seg2─轉角2─seg3
-// 接下去，每個轉角都跟原設計一樣是 157.5°（兩段幾乎打直、只微彎），兩個轉角
-// 個別獨立、不共用同一個點，所以整體看起來像一道很淺的弧線（如手繪參考圖）。
+// 三段鏈式彎樑（跟上面兩顆超音波那支是兩個不同的零件，都保留）：不是三臂共用
+// 一個轉角點放射狀張開，是像原本兩段彎樑那樣，一路 seg1─轉角1─seg2─轉角2─seg3
+// 接下去，兩個轉角個別獨立、不共用同一個點，整體看起來像一道很淺的弧線
+// （如手繪參考圖）。整支的總彎曲量要跟兩顆超音波那支一致（偏離筆直共 22.5°）
+// ——那支只有一個轉角就吃滿 22.5°，這支有兩個轉角，各分一半（11.25°），
+// 兩個轉角合起來看起來才會跟兩顆超音波那支一樣「彎一點點」，不會兩倍彎。
 // 每段孔位排列統一：格點 0 是轉角本身（填實，不算孔），格點 8／56 是側孔
 // （感測器固定用），格點 16/24/32/40/48 這 5 個是一般正面孔——對應「1、7 是
-// 側孔，中間 5 個孔」。轉角兩兩獨立（seg1/seg2 只在轉角1、seg2/seg3 只在
-// 轉角2 各自 157.5°），跟原本驗證過的兩段設計是同一種夾角關係，沿用格點 8
-// 當側孔位置即可（實測兩臂側孔開口最近距離 ≈14mm，遠比 45° 那組安全，
-// 不需要像三臂版那樣特別外移）。中間段（seg2）因為兩端都是轉角，比外側兩段
-// 多一格（0…64，兩端都填實），原本吊掛的 3 孔支架＋兩根細撐照樣掛在中間段。
+// 側孔，中間 5 個孔」。中間段（seg2）因為兩端都是轉角，比外側兩段多一格
+// （0…64，兩端都填實），原本吊掛的 3 孔支架＋兩根細撐照樣掛在中間段。
 (function(){
   const N=8, BL=2*MOD, EXT=4, W=0.9;
-  const BEND8=157.5;                    // 每個轉角的夾角，兩段幾乎打直只微彎
+  const BEND8=180-(180-157.5)/2;        // 168.75°：偏離筆直只有 11.25°，兩個
+                                         // 轉角加起來跟原設計的 22.5° 一樣多
   const th1=DEG(BEND8), th2=DEG(180-BEND8);
   const L2=N*MOD;                        // 中間段兩端都是轉角，多留一格：64
   const j1=[0,0], j2=[L2,0];
@@ -199,7 +199,7 @@ L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
      noface:[Xc-EXT,Xc+BL+EXT]},                                    // 橫樑：3 孔＋兩端外伸段
     strut([Xc-EXT,Dg],[Xc-EXT,R]),
     strut([Xc+BL+EXT,Dg],[Xc+BL+EXT,R])
-  ],TH,'8×8 三段彎樑 '+BEND8+'°×2 · 超音波×3 · 自製','彎樑');
+  ],TH,'spike三顆超音波支架','自製');
 })();
 L90T.forEach(q=>DEFS['Lt'+q[0]+'_'+q[1]]=defFrom(
   [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH/2,
@@ -286,7 +286,7 @@ function arcPlateDef(radius,len){
   const sockets=base.sockets.map(s=>({pos:[s.pos[0],s.pos[1]+yTab,s.pos[2]+dz],
     axis:s.axis.slice()}));
   return {kind:'beam',bars:base.bars,th:TH,sockets:sockets,holeKeys:base.holeKeys,
-    name:'弧形板 · R'+radius+' · '+len+' mm',cat:'弧形板',col:CAT_COL['弧形板'],
+    name:'相撲比賽斜板 · R'+radius+' · '+len+' mm',cat:'自製',col:CAT_COL['自製'],
     arcParams:{radius:radius,len:len,dz:dz,n:n,half:half}};
 }
 DEFS['arcPlate']=arcPlateDef(80,64);   // 目錄示範條目，僅供抽屜列表/縮圖使用
@@ -300,7 +300,7 @@ function ensureArcDef(key){
   return key;
 }
 
-const CATS=['直樑','薄樑','直角樑','T 樑','彎樑','框架','軸孔樑','凸銷樑','弧形板'];
+const CATS=['直樑','薄樑','直角樑','T 樑','彎樑','框架','軸孔樑','凸銷樑','自製'];
 const KEYS_BY_CAT={};
 CATS.forEach(c=>KEYS_BY_CAT[c]=Object.keys(DEFS).filter(k=>DEFS[k].cat===c));
 
@@ -655,7 +655,7 @@ function arcWedgeGeo(radius,len){
   return g;
 }
 
-const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':'彎','框架':'框','軸孔樑':'軸','凸銷樑':'銷','弧形板':'弧'};
+const SHORT={'直樑':'直','薄樑':'薄','直角樑':'L','T 樑':'T','彎樑':'彎','框架':'框','軸孔樑':'軸','凸銷樑':'銷','自製':'自'};
 
 export {MOD,TH,R,HOLE,DEFS,CATS,KEYS_BY_CAT,CAT_COL,SHORT,
   cbDia,cbDep,thumb,barSolid,barSolidSpec,sideCutList,partPieces,
