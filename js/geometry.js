@@ -112,63 +112,56 @@ THINS.forEach(q=>DEFS['thin'+q[0]]=defFrom([{xs:span(q[0]),rot:0}],TH/2,
 L90.forEach(q=>DEFS['L'+q[0]+'_'+q[1]]=defFrom(
   [{xs:from0(q[0]),rot:0},{xs:from0(q[1]),rot:DEG(90)}],TH,
   nm(q[0]+'×'+q[1]+' 直角',q[2]),'直角樑'));
-// 三臂彎樑：中間 armC 朝 0°，左右 armL/armR 各朝 ±BEND8（157.5°）——注意 armL
-// 跟 armR 彼此只隔 360-2*BEND8=45°，比 armC 跟兩者各自的 157.5° 窄得多，是全
-// 零件最容易撞孔的地方，因此 armL/armR 用跟 armC 不同、間距更寬的側孔位置
-// （推導見下方 SIDE2 註解）。原本吊在兩臂中間的 3 孔橫樑＋兩根細撐，現在整組
-// 改成掛在 armC 單臂上（兩根細撐都改接回 armC，同一支臂上兩個不同位置）。
-// 每隻臂都裝一顆超音波感測器（側孔固定），故整件共可裝 3 顆。
+// 8×8 彎樑（角度見下方 BEND8）＋吊在轉角下方的 3 孔橫樑。原本的兩臂／兩顆
+// 超音波版本——中間試過三臂共用一個轉角點放射狀張開，撞孔問題一直不好處理，
+// 改回這版，跟下面的三段鏈式彎樑（B8_8chain）分開保留，兩個都留著。
+// 參數由淨空搜尋決定：橫樑吊出 21mm、兩端各外伸 4mm（外伸段不開孔，
+// 供細撐接著），細撐半寬 0.9mm、落在兩臂距轉角 20mm 的非孔位置。
+// 如此 18 個孔的孔緣都留有 ≥0.5mm 淨空，且每個孔都能插滿樂高插銷。
 (function(){
-  const N=11, BL=2*MOD, EXT=4, W=0.9;
-  // armC 與 armL／armR 的夾角。改這一個數字即可，下面 SD_C 會跟著算。
+  const N=8, BL=2*MOD, EXT=4, J=20, W=0.9;
+  // 兩臂夾角。改這一個數字即可，下面的 T 與 SD 都由它算出來。
+  // 每顆超音波感測器朝外偏 (180-BEND8)/2 度。
   const BEND8=157.5;
-  const th=DEG(BEND8);
-  // armC 到 armL／armR 各 157.5°，跟原本兩臂彎樑的夾角完全一樣，沿用同一張
-  // 淨空掃描表得到的 SD_C——這條關係沒有變，照抄即可。
+  const th=DEG(BEND8), half=th/2;
+  // 橫樑吊出距離：讓橫樑端點與臂軸維持 13.4mm 淨距（沿用原設計）
+  const T=(13.4+(BL/2+EXT)*Math.cos(half))/Math.sin(half);
+  const bx=Math.cos(half), by=Math.sin(half);
+  const dx=Math.sin(half), dy=-Math.cos(half);
+  const h0=[T*bx-(BL/2)*dx, T*by-(BL/2)*dy];      // 橫樑第一個孔
+  const at=t=>[h0[0]+t*dx, h0[1]+t*dy];
+  const tipA=at(BL+EXT), tipB=at(-EXT);
+  // 超音波感測器：兩臂各一顆，孔距 48mm（6 格），以橫孔固定。
+  // 為了讓兩顆本體靠近，整組往轉角內移到 SD=5.5mm（脫離 8mm 格點）。
+  // 連帶必須刪掉轉角孔（兩臂共用、且已無用）與 x=48 的正面孔
+  // （否則與內移後的側孔只剩 0.45mm 材料）。
+  // 角度越尖，兩顆感測器的內側孔越靠近，孔就得往外退。
+  // 下表由淨空掃描逐角度求得：每一格都經實測，兩內孔之間至少留 0.90mm 材料。
+  // 可用範圍 90°~160°；再尖下去外側孔就會超出臂端。
   const SD_TABLE=[[90,7.85], [92.5,7.65], [95,7.5], [97.5,7.3], [100,7.1], [102.5,6.95], [105,6.8], [107.5,6.6], [110,6.5], [112.5,6.3], [115,6.2], [117.5,6.05], [120,5.9], [122.5,5.8], [125,5.7], [127.5,5.55], [130,5.4], [132.5,5.3], [135,5.2], [137.5,5.1], [140,5], [142.5,4.9], [145,4.8], [147.5,4.7], [150,4.6], [152.5,4.5], [155,4.4], [157.5,4.3], [160,4.2]];
   const SD=(function(a){
     if(a<=SD_TABLE[0][0])return SD_TABLE[0][1];
     const last=SD_TABLE[SD_TABLE.length-1];
     if(a>=last[0])return last[1];
     for(let i=1;i<SD_TABLE.length;i++)
-      if(a<=SD_TABLE[i][0])return SD_TABLE[i-1][1];
+      if(a<=SD_TABLE[i][0])return SD_TABLE[i-1][1];   // 取較保守的一側
     return last[1];
   })(BEND8);
-  const SD_C=SD;                                  // 4.3
-  // armL／armR 互隔 45°：兩臂上距轉角同樣距離 x 的兩個「正面孔」，直線距離＝
-  // 2·x·sin(22.5°)≈0.7654x，x=8 只剩 6.1mm，比照原表的安全門檻（沉孔
-  // Ø6.1＋留料）不夠，要移除。但側孔本身更嚴苛：側孔開口偏離臂中心線 ±R，
-  // 兩臂互為鏡像的那組開口實際距離是 2·|x·sin157.5°+R·cos157.5°|，遠比正面
-  // 孔的中心距小——算下來 x=16 只有 5.0mm，得再往外推到 x=24（格點）才有
-  // 11.2mm，安全。臂長也從 8 孔一路加到 11 孔，才裝得下 24mm 起跳、間距仍是
-  // 48mm（6 格）的感測器孔位，尾端還留 8mm 餘量。
-  const SIDE2=3*MOD;                              // 24
-  const sideC=[SD_C, SD_C+6*MOD];                 // 4.3、52.3
-  const side2=[SIDE2, SIDE2+6*MOD];               // 24、72
-  const g=n=>n*MOD;                               // 格點捷徑
-  const armXsC=[...new Set([0,SD_C,g(2),g(3),g(4),g(5),SD_C+6*MOD,g(7),g(8),g(9),g(10)])]
-                 .sort((a,b)=>a-b);
-  // 填實：轉角、太靠近 SD_C 的 x=8、太靠近 52.3 的 x=48/56、以及兩個側孔本身
-  const armSolidC=[0,g(1),g(6),g(7)].concat(sideC);
-  const armXs2=[0,g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),g(9),g(10)];
-  // 填實：轉角、跟鏡像臂互撞的 x=8（見上方推導）、兩個側孔本身
-  const armSolid2=[0,g(1)].concat(side2);
+  const sideIdx=[SD, SD+6*MOD];                   // 側孔：x=5.5 與 53.5
+  const armXs=[...new Set([0,SD,2*MOD,3*MOD,4*MOD,5*MOD,6*MOD,SD+6*MOD,(N-1)*MOD])]
+                .sort((a,b)=>a-b);
+  const armSolid=[0,6*MOD,(N-1)*MOD].concat(sideIdx);   // 填實：轉角、x=48、臂端
   const strut=(P,Q)=>{const L=Math.hypot(Q[0]-P[0],Q[1]-P[1]);
     return {xs:[0,L],rot:Math.atan2(Q[1]-P[1],Q[0]-P[0]),off:[P[0],P[1]],
             rw:W,noface:[0,L]};};
-  // 橫樑（原本吊在兩臂中間）現在掛在 armC 上：平行 armC、離軸 Dg=17mm
-  // （扣掉臂本身半寬 R 後淨距跟原設計的 13.4mm 相近），X 落在 armC 中段
-  // （Xc=24，避開轉角孔位與感測器孔位），兩端各一根細撐垂直接回 armC 表面。
-  const Xc=24, Dg=17;
   DEFS['B8_8b']=defFrom([
-    {xs:armXsC,rot:0, side:sideC,noface:armSolidC},          // armC（中間，0°）
-    {xs:armXs2,rot:th, side:side2,noface:armSolid2},         // armL（+157.5°）
-    {xs:armXs2,rot:-th,side:side2,noface:armSolid2},         // armR（-157.5°）
-    {xs:[Xc-EXT,Xc,Xc+MOD,Xc+BL,Xc+BL+EXT],rot:0,off:[0,Dg],
-     noface:[Xc-EXT,Xc+BL+EXT]},                             // 橫樑：3 孔＋兩端外伸段
-    strut([Xc-EXT,Dg],[Xc-EXT,R]),
-    strut([Xc+BL+EXT,Dg],[Xc+BL+EXT,R])
-  ],TH,'8×11 三臂彎樑 '+BEND8+'°/'+BEND8+'° · 超音波×3 · 自製','彎樑');
+    {xs:armXs,rot:0,  side:sideIdx,noface:armSolid},
+    {xs:armXs,rot:th, side:sideIdx,noface:armSolid},
+    {xs:[-EXT,0,MOD,BL,BL+EXT],rot:Math.atan2(dy,dx),off:h0,
+     noface:[-EXT,BL+EXT]},                        // 橫樑：3 孔＋兩端外伸段
+    strut(tipA,[J,0]),
+    strut(tipB,[J*Math.cos(th),J*Math.sin(th)])
+  ],TH,'8×8 彎樑 '+BEND8+'° · 轉角橫樑 · 自製','彎樑');
 })();
 // 三段鏈式彎樑（跟上面那個三臂版是兩個不同的零件，都保留）：不是三臂共用一個
 // 轉角點放射狀張開，是像原本兩段彎樑那樣，一路 seg1─轉角1─seg2─轉角2─seg3
