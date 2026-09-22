@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://trunnionlab.com/sitemap.xml
+Sitemap: https://www.trunnionlab.com/sitemap.xml

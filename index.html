@@ -8,12 +8,12 @@
 <meta http-equiv="Pragma" content="no-cache">
 <title>TrunnionLab 科技零件工作台 — Technic 相容零件線上拼裝與 3D 列印輸出</title>
 <meta name="description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
-<link rel="canonical" href="https://trunnionlab.com/">
+<link rel="canonical" href="https://www.trunnionlab.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TrunnionLab">
 <meta property="og:title" content="TrunnionLab — 科技零件工作台">
 <meta property="og:description" content="TrunnionLab 科技零件工作台：線上拼裝科技系列積木零件，一鍵轉成可 3D 列印的 STL 檔。零件庫只收正版實際存在的直樑、薄樑、直角樑、T 樑、彎樑並標示官方編號，孔徑公差可調，內建布林聯集與公差測試件產生器。與 LEGO® Technic 尺寸相容，免安裝、免註冊。">
-<meta property="og:url" content="https://trunnionlab.com/">
+<meta property="og:url" content="https://www.trunnionlab.com/">
 <meta property="og:locale" content="zh_TW">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TrunnionLab — 科技零件工作台">
@@ -24,7 +24,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication",
  "name":"TrunnionLab","alternateName":["科技零件工作台","TrunnionLab 科技零件工作台"],
- "url":"https://trunnionlab.com/",
+ "url":"https://www.trunnionlab.com/",
  "applicationCategory":"DesignApplication",
  "operatingSystem":"任何具備現代瀏覽器的裝置",
  "inLanguage":"zh-Hant",
@@ -954,8 +954,11 @@ button:active:not(:disabled){transform:translateY(.5px) scale(.975)}
 
 <script>
 function showFail(t,d){var e=document.getElementById('empty');if(!e)return;
-  e.className='err';e.style.display='flex';
-  e.innerHTML='<article class="intro"><h2>'+t+'</h2><p>'+d+'</p></article>';}
+  e.className='err';e.style.display='flex';e.innerHTML='';
+  var art=document.createElement('article');art.className='intro';
+  var h=document.createElement('h2');h.textContent=t;
+  var p=document.createElement('p');p.textContent=d;
+  art.appendChild(h);art.appendChild(p);e.appendChild(art);}
 window.addEventListener('error',function(ev){
   showFail('程式出錯了',(ev.message||'未知錯誤')+' — 行 '+(ev.lineno||'?'));});
 </script>
