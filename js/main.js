@@ -1097,7 +1097,7 @@ let curCat=CATS[0];
 function buildCats(){
   const c=el('popCats');c.innerHTML='';
   CATS.forEach(cat=>{
-    const n=KEYS_BY_CAT[cat].length; if(!n)return;
+    const n=KEYS_BY_CAT[cat].length+(cat==='自製'?1:0); if(!n)return;
     const b=document.createElement('button');
     b.title=cat;
     b.innerHTML='<span class="t">'+(SHORT[cat]||cat)+'</span><span class="n">'+n+'</span>';
@@ -1121,7 +1121,8 @@ function buildCats(){
 }
 function buildList(){
   const c=el('popList');c.innerHTML='';
-  el('flyH').textContent=curCat+' · '+KEYS_BY_CAT[curCat].length+' 種';
+  const extra=(curCat==='自製')?1:0;
+  el('flyH').textContent=curCat+' · '+(KEYS_BY_CAT[curCat].length+extra)+' 種';
   KEYS_BY_CAT[curCat].forEach(k=>{
     const b=document.createElement('button');b.className='prow';
     b.title=DEFS[k].name;
@@ -1132,6 +1133,25 @@ function buildList(){
       startGhost(k);
     };
     c.appendChild(b);});
+  if(curCat==='自製'){
+    const b=document.createElement('button');b.className='prow';
+    b.title='我想要我自己的零件';
+    b.innerHTML='<span class="lbl">＋ 我想要我自己的零件</span>';
+    b.onclick=requestCustomPart;
+    c.appendChild(b);
+  }
+}
+// 「自製」分頁的最後一格：不是零件，點下去說明目前還沒有讓使用者自己
+// 做零件的功能，直接把人導去既有的建議表單留言。
+async function requestCustomPart(){
+  const go=await Ask.info('我想要我自己的零件',
+    '雖然我們的團隊還做不到讓使用者自己製作一個專屬於自己的零件，但是你可以告訴我們你想要什麼，我們會盡快完成。',
+    '告訴我們');
+  if(!go)return;
+  const tx=el('fbText');
+  if(tx&&!tx.value.trim()){tx.value='我想要的零件：';tx.dispatchEvent(new Event('input'));}
+  el('fbBtn').click();
+  if(tx){const n=tx.value.length;tx.focus();tx.setSelectionRange(n,n);}
 }
 // 弧形板：跳出半徑/長/寬/厚的數字輸入框，確定後動態組出這次的專屬 defKey 再走
 // 既有的 ghost 放置流程；取消則什麼都不做。

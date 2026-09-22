@@ -70,6 +70,7 @@ export const Ask=(function(){
   return {
     text:(title,label,value)=>open({title,label,value,input:true}),
     confirm:(title,body,yes)=>open({title,body,yes,danger:true}),
+    info:(title,body,yes)=>open({title,body,yes}),
     numbers:(title,fields)=>open({title,fields})
   };
 })();
