@@ -1833,6 +1833,8 @@ el('btnAuth').onclick=()=>{
    免費），單一檔案上限抓在 base64 膨脹後還留一點餘裕給其他欄位。 */
 const DROP_EMAIL='dropbox@trunnionlab.internal';
 const DROP_MAX=700*1024;
+const DROP_FAIL_KEY='trunnionlab:dropFails';
+const DROP_FAIL_LIMIT=5, DROP_LOCK_MS=10*60*1000;
 if(el('fbText')){
   el('fbText').addEventListener('input',e=>{
     const v=e.target.value.trim().toLowerCase();
@@ -1843,12 +1845,27 @@ if(el('fbText')){
     dropFlow(mode);
   });
 }
+function dropFailState(){
+  try{ return JSON.parse(localStorage.getItem(DROP_FAIL_KEY)||'{}'); }catch(e){ return {}; }
+}
+function dropFailSave(s){ try{ localStorage.setItem(DROP_FAIL_KEY,JSON.stringify(s)); }catch(e){} }
+function dropLockRemaining(){
+  const s=dropFailState();
+  return (s.until&&Date.now()<s.until) ? s.until-Date.now() : 0;
+}
+function dropFailBump(){
+  const s=dropFailState(), n=(s.count||0)+1;
+  dropFailSave(n>=DROP_FAIL_LIMIT ? {count:0,until:Date.now()+DROP_LOCK_MS} : {count:n});
+}
 async function dropFlow(mode){
   if(!window.__drop){ toast('雲端服務尚未載入，稍後再試。',true); return; }
+  const remain=dropLockRemaining();
+  if(remain>0){ toast('密碼錯誤太多次，請 '+Math.ceil(remain/60000)+' 分鐘後再試。',true); return; }
   const pass=await Ask.text('','密碼','',{password:true});
   if(pass===null)return;
   try{ await window.__drop.signIn(DROP_EMAIL,pass); }
-  catch(e){ toast('密碼錯誤',true); return; }
+  catch(e){ dropFailBump(); toast('密碼錯誤',true); return; }
+  dropFailSave({count:0});
   try{
     if(mode==='in') await dropUpload(); else await dropDownload();
   } finally {
