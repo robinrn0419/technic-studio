@@ -1824,6 +1824,115 @@ el('btnAuth').onclick=()=>{
   });
 };
 
+/* ── 隱藏雲端傳檔（trunnionlab in/out）──
+   在「給作者建議」的文字框打這兩句其中一句（前後空白不算），會直接接管
+   輸入框、跳出密碼欄。密碼經 Firebase 的伺服器驗證（見 index.html 的
+   window.__drop，跟一般 Google 登入是完全獨立的第二個 Firebase App
+   實體）——這裡的觸發字串本身不是祕密，任何人都看得到程式碼，但沒有
+   密碼什麼都做不了。存放方式是 Firestore 文件（不是 Storage，才能維持
+   免費），單一檔案上限抓在 base64 膨脹後還留一點餘裕給其他欄位。 */
+const DROP_EMAIL='dropbox@trunnionlab.internal';
+const DROP_MAX=700*1024;
+const DROP_FAIL_KEY='trunnionlab:dropFails';
+const DROP_FAIL_LIMIT=5, DROP_LOCK_MS=10*60*1000;
+if(el('fbText')){
+  el('fbText').addEventListener('input',e=>{
+    const v=e.target.value.trim().toLowerCase();
+    if(v!=='trunnionlab in'&&v!=='trunnionlab out')return;
+    const mode=v.endsWith('in')?'in':'out';
+    e.target.value='';
+    el('fbWrap').classList.remove('on');
+    dropFlow(mode);
+  });
+}
+function dropFailState(){
+  try{ return JSON.parse(localStorage.getItem(DROP_FAIL_KEY)||'{}'); }catch(e){ return {}; }
+}
+function dropFailSave(s){ try{ localStorage.setItem(DROP_FAIL_KEY,JSON.stringify(s)); }catch(e){} }
+function dropLockRemaining(){
+  const s=dropFailState();
+  return (s.until&&Date.now()<s.until) ? s.until-Date.now() : 0;
+}
+function dropFailBump(){
+  const s=dropFailState(), n=(s.count||0)+1;
+  dropFailSave(n>=DROP_FAIL_LIMIT ? {count:0,until:Date.now()+DROP_LOCK_MS} : {count:n});
+}
+async function dropFlow(mode){
+  if(!window.__drop){ toast('雲端服務尚未載入，稍後再試。',true); return; }
+  const remain=dropLockRemaining();
+  if(remain>0){ toast('密碼錯誤太多次，請 '+Math.ceil(remain/60000)+' 分鐘後再試。',true); return; }
+  const pass=await Ask.text('','密碼','',{password:true});
+  if(pass===null)return;
+  try{ await window.__drop.signIn(DROP_EMAIL,pass); }
+  catch(e){ dropFailBump(); toast('密碼錯誤',true); return; }
+  dropFailSave({count:0});
+  try{
+    if(mode==='in') await dropUpload(); else await dropDownload();
+  } finally {
+    window.__drop.signOut().catch(()=>{});
+  }
+}
+function dropUpload(){
+  return new Promise(resolve=>{
+    const inp=document.createElement('input');inp.type='file';
+    inp.onchange=async()=>{
+      const f=inp.files[0];
+      if(!f){resolve();return;}
+      if(f.size>DROP_MAX){
+        toast('檔案太大：'+Math.round(f.size/1024)+' KB，上限 '+Math.round(DROP_MAX/1024)+' KB。',true);
+        resolve();return;
+      }
+      const r=new FileReader();
+      r.onload=async()=>{
+        try{
+          await window.__drop.put(newId(),{name:f.name,
+            type:f.type||'application/octet-stream',size:f.size,
+            data:r.result,uploadedAt:new Date().toISOString()});
+          toast('已上傳：'+f.name);
+        }catch(e){toast('上傳失敗：'+(e&&e.message||e),true);}
+        resolve();
+      };
+      r.onerror=()=>{toast('讀取檔案失敗',true);resolve();};
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  });
+}
+async function dropDownload(){
+  let list;
+  try{ list=await window.__drop.list(); }
+  catch(e){ toast('讀取失敗：'+(e&&e.message||e),true); return; }
+  if(!list.length){ toast('雲端目前沒有檔案。'); return; }
+  const body=list.map((f,i)=>(i+1)+'. '+f.name+'　('+Math.round(f.size/1024)+' KB)').join('\n');
+  const n=await Ask.text('選擇檔案','輸入編號下載，或 d+編號刪除（例如 d2）','1',{body});
+  if(n===null)return;
+  const v=n.trim();
+  const isDel=/^d/i.test(v);
+  const idx=parseInt(isDel?v.slice(1):v,10)-1;
+  const rec=list[idx];
+  if(!rec){ toast('編號不對。',true); return; }
+  if(isDel){
+    const ok=await Ask.confirm('刪除檔案？','確定要刪除「'+rec.name+'」？此動作無法復原。','刪除');
+    if(!ok)return;
+    try{ await window.__drop.del(rec.id); toast('已刪除：'+rec.name); }
+    catch(e){ toast('刪除失敗：'+(e&&e.message||e),true); }
+    return;
+  }
+  try{
+    dl(dataUrlToBlob(rec.data),rec.name);
+  }catch(e){ toast('下載失敗：'+(e&&e.message||e),true); }
+}
+// data: URL → Blob，純本地解碼（不走 fetch），CSP 的 connect-src 管不到，
+// 之前用 fetch(dataUrl) 曾被 CSP 擋下（data: 不在 connect-src 白名單裡）。
+function dataUrlToBlob(dataUrl){
+  const i=dataUrl.indexOf(',');
+  const meta=dataUrl.slice(0,i), b64=dataUrl.slice(i+1);
+  const m=/data:(.*?)(;base64)?$/.exec(meta);
+  const bin=atob(b64), bytes=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
+  return new Blob([bytes],{type:(m&&m[1])||'application/octet-stream'});
+}
+
 /* ── 說明 ──
    內容沿用工作台空狀態的那份，不另外複製一份文字。 */
 

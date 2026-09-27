@@ -36,6 +36,7 @@ export const Ask=(function(){
         nums.style.display='none';numFields=null;
         lab.style.display='';inp.style.display='';
         lab.textContent=o.label||'名稱';inp.value=o.value||'';
+        inp.type=o.password?'password':'text';
       } else {
         nums.style.display='none';numFields=null;
         lab.style.display='none';inp.style.display='none';
@@ -68,7 +69,8 @@ export const Ask=(function(){
       e.stopPropagation();close(null);}
   },true);
   return {
-    text:(title,label,value)=>open({title,label,value,input:true}),
+    text:(title,label,value,opts)=>open({title,label,value,input:true,
+      body:opts&&opts.body,password:opts&&opts.password}),
     confirm:(title,body,yes)=>open({title,body,yes,danger:true}),
     info:(title,body,yes)=>open({title,body,yes}),
     numbers:(title,fields)=>open({title,fields})
