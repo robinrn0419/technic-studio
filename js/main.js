@@ -1890,9 +1890,18 @@ async function dropDownload(){
   const rec=list[idx];
   if(!rec){ toast('編號不對。',true); return; }
   try{
-    const blob=await fetch(rec.data).then(r=>r.blob());
-    dl(blob,rec.name);
+    dl(dataUrlToBlob(rec.data),rec.name);
   }catch(e){ toast('下載失敗：'+(e&&e.message||e),true); }
+}
+// data: URL → Blob，純本地解碼（不走 fetch），CSP 的 connect-src 管不到，
+// 之前用 fetch(dataUrl) 曾被 CSP 擋下（data: 不在 connect-src 白名單裡）。
+function dataUrlToBlob(dataUrl){
+  const i=dataUrl.indexOf(',');
+  const meta=dataUrl.slice(0,i), b64=dataUrl.slice(i+1);
+  const m=/data:(.*?)(;base64)?$/.exec(meta);
+  const bin=atob(b64), bytes=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
+  return new Blob([bytes],{type:(m&&m[1])||'application/octet-stream'});
 }
 
 /* ── 說明 ──
