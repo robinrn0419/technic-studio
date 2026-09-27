@@ -1861,7 +1861,10 @@ function dropUpload(){
     inp.onchange=async()=>{
       const f=inp.files[0];
       if(!f){resolve();return;}
-      if(f.size>DROP_MAX){toast('檔案太大，上限約 700KB。',true);resolve();return;}
+      if(f.size>DROP_MAX){
+        toast('檔案太大：'+Math.round(f.size/1024)+' KB，上限 '+Math.round(DROP_MAX/1024)+' KB。',true);
+        resolve();return;
+      }
       const r=new FileReader();
       r.onload=async()=>{
         try{
@@ -1884,11 +1887,20 @@ async function dropDownload(){
   catch(e){ toast('讀取失敗：'+(e&&e.message||e),true); return; }
   if(!list.length){ toast('雲端目前沒有檔案。'); return; }
   const body=list.map((f,i)=>(i+1)+'. '+f.name+'　('+Math.round(f.size/1024)+' KB)').join('\n');
-  const n=await Ask.text('選擇檔案','輸入編號','1',{body});
+  const n=await Ask.text('選擇檔案','輸入編號下載，或 d+編號刪除（例如 d2）','1',{body});
   if(n===null)return;
-  const idx=parseInt(n,10)-1;
+  const v=n.trim();
+  const isDel=/^d/i.test(v);
+  const idx=parseInt(isDel?v.slice(1):v,10)-1;
   const rec=list[idx];
   if(!rec){ toast('編號不對。',true); return; }
+  if(isDel){
+    const ok=await Ask.confirm('刪除檔案？','確定要刪除「'+rec.name+'」？此動作無法復原。','刪除');
+    if(!ok)return;
+    try{ await window.__drop.del(rec.id); toast('已刪除：'+rec.name); }
+    catch(e){ toast('刪除失敗：'+(e&&e.message||e),true); }
+    return;
+  }
   try{
     dl(dataUrlToBlob(rec.data),rec.name);
   }catch(e){ toast('下載失敗：'+(e&&e.message||e),true); }

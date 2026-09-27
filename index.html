@@ -1019,6 +1019,7 @@ try{
     signIn:  (email, pass) => signInWithEmailAndPassword(dropAuth, email, pass),
     signOut: () => signOut(dropAuth),
     put: (id, rec) => setDoc(doc(dropDb, 'dropbox', id), rec),
+    del: (id) => deleteDoc(doc(dropDb, 'dropbox', id)),
     list: () => getDocs(collection(dropDb, 'dropbox'))
       .then(snap => snap.docs.map(d => ({ id: d.id, ...d.data() })))
   };
