@@ -1824,6 +1824,77 @@ el('btnAuth').onclick=()=>{
   });
 };
 
+/* ── 隱藏雲端傳檔（trunnionlab in/out）──
+   在「給作者建議」的文字框打這兩句其中一句（前後空白不算），會直接接管
+   輸入框、跳出密碼欄。密碼經 Firebase 的伺服器驗證（見 index.html 的
+   window.__drop，跟一般 Google 登入是完全獨立的第二個 Firebase App
+   實體）——這裡的觸發字串本身不是祕密，任何人都看得到程式碼，但沒有
+   密碼什麼都做不了。存放方式是 Firestore 文件（不是 Storage，才能維持
+   免費），單一檔案上限抓在 base64 膨脹後還留一點餘裕給其他欄位。 */
+const DROP_EMAIL='dropbox@trunnionlab.internal';
+const DROP_MAX=700*1024;
+if(el('fbText')){
+  el('fbText').addEventListener('input',e=>{
+    const v=e.target.value.trim().toLowerCase();
+    if(v!=='trunnionlab in'&&v!=='trunnionlab out')return;
+    const mode=v.endsWith('in')?'in':'out';
+    e.target.value='';
+    el('fbWrap').classList.remove('on');
+    dropFlow(mode);
+  });
+}
+async function dropFlow(mode){
+  if(!window.__drop){ toast('雲端服務尚未載入，稍後再試。',true); return; }
+  const pass=await Ask.text('','密碼','',{password:true});
+  if(pass===null)return;
+  try{ await window.__drop.signIn(DROP_EMAIL,pass); }
+  catch(e){ toast('密碼錯誤',true); return; }
+  try{
+    if(mode==='in') await dropUpload(); else await dropDownload();
+  } finally {
+    window.__drop.signOut().catch(()=>{});
+  }
+}
+function dropUpload(){
+  return new Promise(resolve=>{
+    const inp=document.createElement('input');inp.type='file';
+    inp.onchange=async()=>{
+      const f=inp.files[0];
+      if(!f){resolve();return;}
+      if(f.size>DROP_MAX){toast('檔案太大，上限約 700KB。',true);resolve();return;}
+      const r=new FileReader();
+      r.onload=async()=>{
+        try{
+          await window.__drop.put(newId(),{name:f.name,
+            type:f.type||'application/octet-stream',size:f.size,
+            data:r.result,uploadedAt:new Date().toISOString()});
+          toast('已上傳：'+f.name);
+        }catch(e){toast('上傳失敗：'+(e&&e.message||e),true);}
+        resolve();
+      };
+      r.onerror=()=>{toast('讀取檔案失敗',true);resolve();};
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  });
+}
+async function dropDownload(){
+  let list;
+  try{ list=await window.__drop.list(); }
+  catch(e){ toast('讀取失敗：'+(e&&e.message||e),true); return; }
+  if(!list.length){ toast('雲端目前沒有檔案。'); return; }
+  const body=list.map((f,i)=>(i+1)+'. '+f.name+'　('+Math.round(f.size/1024)+' KB)').join('\n');
+  const n=await Ask.text('選擇檔案','輸入編號','1',{body});
+  if(n===null)return;
+  const idx=parseInt(n,10)-1;
+  const rec=list[idx];
+  if(!rec){ toast('編號不對。',true); return; }
+  try{
+    const blob=await fetch(rec.data).then(r=>r.blob());
+    dl(blob,rec.name);
+  }catch(e){ toast('下載失敗：'+(e&&e.message||e),true); }
+}
+
 /* ── 說明 ──
    內容沿用工作台空狀態的那份，不另外複製一份文字。 */
 

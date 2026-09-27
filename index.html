@@ -1006,6 +1006,25 @@ try{
 }catch(e){
   console.warn('[cloud] init failed — staying local-only', e);
 }
+
+/* ── 隱藏雲端傳檔（trunnionlab in/out）──
+   用獨立的第二個 Firebase App 實體（同一個專案，不同的 auth/db 連線），
+   跟上面主帳號的登入狀態完全隔離——密碼登入這裡不會觸發、也不會被
+   一般使用者的 Google 登入影響，兩邊互不干擾。 */
+try{
+  const dropApp  = initializeApp(firebaseConfig, 'drop');
+  const dropAuth = getAuth(dropApp);
+  const dropDb   = getFirestore(dropApp);
+  window.__drop = {
+    signIn:  (email, pass) => signInWithEmailAndPassword(dropAuth, email, pass),
+    signOut: () => signOut(dropAuth),
+    put: (id, rec) => setDoc(doc(dropDb, 'dropbox', id), rec),
+    list: () => getDocs(collection(dropDb, 'dropbox'))
+      .then(snap => snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  };
+}catch(e){
+  console.warn('[drop] init failed', e);
+}
 </script>
 <script type="module" src="js/main.js"></script>
 </body>
