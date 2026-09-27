@@ -276,7 +276,7 @@ body.show-intro #empty{display:flex!important}
   transform:scale(.96) translateY(6px);transition:transform .22s var(--ease)}
 #askWrap.on #askCard{transform:none}
 #askCard h4{margin:0 0 6px;font-size:19px;font-weight:500;letter-spacing:-.012em}
-#askBody{margin:0 0 22px;font-size:13px;line-height:1.8;color:var(--muted)}
+#askBody{margin:0 0 22px;font-size:13px;line-height:1.8;color:var(--muted);white-space:pre-line}
 #askBody:empty{display:none}
 #askLab{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--dim);margin-bottom:9px}
@@ -969,10 +969,10 @@ window.addEventListener('error',function(ev){
    掛到 window.__cloud，主程式（非模組）再接上去。
    連不上時 window.__cloud 不會存在，主程式自動退回純本地模式。 */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-         setPersistence, browserLocalPersistence }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword,
+         signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
   from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs }
   from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const firebaseConfig = {
