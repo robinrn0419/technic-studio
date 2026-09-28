@@ -2032,8 +2032,10 @@ showHome();
 loadManifold().then(()=>{
   cutSideHolesSoon();          // 若已開著專案，逐格把側孔補上，不凍畫面
   saveLocal();
-}).catch(()=>{
-  toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。',true);
+}).catch(err=>{
+  console.error('[manifold] 載入失敗',err);
+  toast('布林模組載入失敗，側孔會暫時畫不出來（其餘功能不受影響）。\n'+
+        '原因：'+(err&&err.message?err.message:err),true);
 }).finally(()=>{
   migrateThumbs();                 // 等側孔幾何就緒後再重截既有縮圖
   if(atHome&&typeof renderDocs==='function')renderDocs();
