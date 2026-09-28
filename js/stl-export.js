@@ -56,7 +56,7 @@ export function getMF(){return MF;}
 export function loadManifold(){
   if(MF)return Promise.resolve(MF);
   if(mfPending)return mfPending;
-  mfPending=import('https://cdn.jsdelivr.net/npm/manifold-3d@2.3.1/manifold.js')
+  mfPending=import('./vendor/manifold-3d/manifold.js')
     .then(m=>m.default())
     .then(w=>{w.setup();MF=w;setMF(w);return w;});
   return mfPending;
